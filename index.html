@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meta.js Test</title>
+    <style>
+        .mb-1 {
+            margin-bottom: 1em;
+        }
+    </style>
+</head>
+<body>
+<div id="app_test"
+    style="display: flex; flex-direction: row;">
+
+    <fieldset>
+        <legend>INFORMATION</legend>
+        <p>
+            <span v-if="n_ocs == null">
+                Loading data ...
+            </span>
+            <span v-else>
+                Loaded all outcomes
+            </span>
+        </p>
+        <div v-if="n_ocs == null">
+            <p>
+                Please wait for loading ...
+            </p>
+        </div>
+        <div v-else>
+            <h2>
+                MA Sample Outputs
+            </h2>
+            <div class="mb-1">
+                <button v-on:click="demo(100)">
+                    Demo 100 outcomes
+                </button>
+            </div>
+            <hr>
+            <h2>
+                Tests
+            </h2>
+            <div class="mb-1">
+                <button v-on:click="run_test(1000)">
+                    Run MA 1,000
+                </button>
+            </div>
+
+            <div class="mb-1">
+                <button v-on:click="run_test_10()">
+                    Run MA 10 Rounds
+                </button>
+            </div>
+
+            <div>
+                <button v-on:click="run_test_random()">
+                    Run MA Random Rounds
+                </button>
+            </div>
+
+        </div>
+    </fieldset>
+
+    <fieldset>
+        <legend>RESULTS</legend>
+        <p v-if="dur == null">
+            No results
+        </p>
+        <p v-else>
+            It takes <b>{{ tf4(dur) }}</b> seconds to calculate {{ results.length }} outcomes
+        </p>
+        <div v-if="results.length > 0"
+            style="display: flex; flex-direction: column; flex-wrap: wrap;">
+            <table v-for="r in results" class="mb-1">
+                <tr>
+                    <th>Study</th>
+                    <th>Et</th>
+                    <th>Nt</th>
+                    <th>Ec</th>
+                    <th>Nc</th>
+                    <th>PLOGIT</th>
+                    <th>(lower, upper)</th>
+                    <th>Weight</th>
+                </tr>
+                <tr v-for="stu, stu_idx in r.oc">
+                    <td>{{ stu[4] }}</td>
+                    <td>{{ stu[0] }}</td>
+                    <td>{{ stu[1] }}</td>
+                    <td>{{ stu[2] }}</td>
+                    <td>{{ stu[3] }}</td>
+                    <td>{{ tf2(r.res.SM[stu_idx]) }}</td>
+                    <td>
+                        (
+                            {{ tf2(r.res.SM_lower[stu_idx]) }}, 
+                            {{ tf2(r.res.SM_upper[stu_idx]) }}
+                        )
+                    </td>
+                    <td>
+                        {{ tf2(r.res.fixed.wp[stu_idx] * 100) }}%
+                    </td>
+                </tr>
+                <tr>
+                    <th colspan="5">Fixed Effect Model</th>
+                    <th>{{ tf2(r.res.fixed.SM) }}</th>
+                    <td>
+                        (
+                            {{ tf2(r.res.fixed.SM_lower) }}, 
+                            {{ tf2(r.res.fixed.SM_upper) }}
+                        )
+                    </td>
+                </tr>
+                <tr>
+                    <th colspan="5">Heterogeneity</th>
+                    <td>
+                        I2={{ tf2(r.res.heterogeneity.I2*100) }}%
+                    </td>
+                    <td>
+                        Tau2={{ tf4(r.res.heterogeneity.tau2) }}
+                    </td>
+                    <td>
+                        p={{ r.res.heterogeneity.pval_Q }}
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <div v-else>
+
+        </div>
+    </fieldset>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.3.0/dist/echarts.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.14/vue.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/nicolaspanel/numjs@0.15.1/dist/numjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/10.1.1/math.min.js"></script>
+
+
+<!-- load meta.js -->
+<script src="./meta.js"></script>
+
+<script>
+
+var app_test = {
+    vpp: null,
+    vpp_id: '#app_test',
+    ocs: [],
+
+    init: function() {
+        
+        this.vpp = new Vue({
+            el: this.vpp_id,
+            data: {
+                n_ocs: null,
+
+                // the log of tests
+                log: [],
+
+                // duration of calculation
+                dur: null,
+
+                // results
+                results: []
+            },
+            methods: {
+                demo: function(n) {
+                    var idxes = math.pickRandom(Array.from(Array(10000).keys()), n);
+                    var ret = app_test.run_ma(idxes);
+
+                    // bind results
+                    this.results = ret.results;
+                    this.dur = ret.dur;
+                },
+
+                run_test: function(n) {
+                    app_test.run_test(n);
+                },
+
+                run_test_10: function() {
+                    app_test.run_test_10();
+                },
+
+                run_test_random: function() {
+                    app_test.run_test_random();
+                },
+
+                tf2(v) {
+                    return v.toFixed(2);
+                },
+
+                tf4(v) {
+                    return v.toFixed(4);
+                }
+            }
+        });
+    },
+
+    run_ma: function(idxes) {
+        var results = [];
+        const t0 = performance.now();
+        for (let i = 0; i < idxes.length; i++) {
+            // get the MA result
+            var res = metajs.metaprop(
+                this.ocs[idxes[i]]
+            );
+
+            // save the res
+            results.push({
+                oc: this.ocs[idxes[i]],
+                res: res
+            });
+        }
+        const t1 = performance.now();
+        const dur = (t1 - t0) / 1000;
+
+        return {
+            dur: dur,
+            results: results
+        };
+    },
+
+    run_test: function(n) {
+        var results = [];
+
+        // start to count
+        const t0 = performance.now();
+        for (let i = 0; i < n; i++) {
+            var res = metajs.metaprop(
+                this.ocs[i]
+            );
+            results.push(res);
+        }
+        const t1 = performance.now();
+
+        // ok, that's how long it takes
+        const dur = (t1 - t0) / 1000;
+
+        console.log('' + n + ',' + dur + '');
+    },
+
+    run_test_10: function() {
+        for (let n = 1000; n <= 10000; n+=1000) {
+            this.run_test(n);
+        }
+    },
+
+    run_test_random: function() {
+        for (let i = 0; i < 50; i++) {
+            // pick random 1000 numbers
+            var nums = math.pickRandom(Array.from(Array(10000).keys()), 1000);
+            var results = [];
+            
+            const t0 = performance.now();
+            for (let i = 0; i < nums.length; i++) {
+                var res = metajs.metaprop(
+                    this.ocs[nums[i]]
+                );
+            }
+            const t1 = performance.now();
+
+            // ok, that's how long it takes
+            const dur = (t1 - t0) / 1000;
+            console.log('' + i + ',' + dur + '');
+        }
+    }
+};
+
+var jarvis = {
+    rs: null,
+
+    init: function() {
+        // init the app first
+        app_test.init();
+
+        // load data
+        Papa.parse("./sample.csv", {
+            download: true,
+            header: true,
+
+            complete: function(rs) {
+                console.log(rs);
+                // bind data
+                jarvis.rs = rs;
+
+                // parse outcomes
+                var outcomes = {};
+
+                for (let i = 0; i < rs.data.length; i++) {
+                    const r = rs.data[i];
+                    if (!outcomes.hasOwnProperty(r.outcome)) {
+                        outcomes[r.outcome] = [];
+                    }
+                    outcomes[r.outcome].push([
+                        parseInt(r.Et), 
+                        parseInt(r.Nt), 
+                        parseInt(r.Ec), 
+                        parseInt(r.Nc), 
+                        r.study, r.treatment, r.control
+                    ]);
+                }
+
+                outcomes = Object.values(outcomes);
+
+                // set the data
+                app_test.ocs = outcomes;
+                app_test.vpp.$data.n_ocs = outcomes.length;
+            }
+        });
+    }
+};
+
+$(document).ready(function() {
+    jarvis.init();
+});
+</script>
+</body>
+</html>
