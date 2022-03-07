@@ -435,7 +435,7 @@ var metajs = {
         ///////////////////////////////
         // Fixed effect model
         ///////////////////////////////
-        if (params.method == 'MH') {
+        if (['MH', 'Inverse'].includes(params.method)) {
             if (params.sm == 'OR') {
                 var A = ds.n11.multiply(ds.n22).divide(ds.n__);
                 var B = ds.n11.add(ds.n22).divide(ds.n__);
