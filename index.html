@@ -83,6 +83,11 @@
             <h2>
                 Performance Test
             </h2>
+            <p v-if="is_testing" style="max-width: 300px;">
+                Details are outputed in console during testing.
+                <br>
+                For Chrome browser, press "Ctrl + Shift + I" on Windows, or "Cmd + Opt + I" on MacOS to open console.
+            </p>
             <div class="mb-1">
                 <button v-on:click="run_tests_topn(1000)"
                     v-bind:disabled="is_testing">
@@ -108,13 +113,18 @@
             </div>
 
             <div>
+                <input type="text" 
+                    :disabled="is_testing"
+                    style="width: 30px"
+                    v-model.number="n_times">
+
                 <button v-on:click="run_tests_random(10)"
                     :disabled="is_testing">
                     <span v-if="is_testing">
                         Running test ...
                     </span>
                     <span v-else>
-                        Run 10 times of PMA of 1,000 outcomes
+                        Run {{ n_times }} times of PMA of 1,000 outcomes
                     </span>
                 </button>
             </div>
@@ -270,12 +280,16 @@ var app_test = {
                 // flag
                 is_testing: false,
 
+                // the n_times
+                n_times: 10,
+
                 // results
                 results: []
             },
             methods: {
 
                 run_sample: function() {
+                    this.clear();
                     // split text
                     var lines = this.sample_txt.split('\n');
                     
@@ -310,6 +324,7 @@ var app_test = {
                 },
 
                 demo: function(n) {
+                    this.clear();
                     var idxes = math.pickRandom(Array.from(Array(10000).keys()), n);
                     var ret = app_test.run_tests_idxes(idxes);
 
@@ -318,28 +333,36 @@ var app_test = {
                     this.dur = ret.dur;
                 },
 
-                run_tests_topn: function(n) {
+                clear: function() {
                     // clear log
                     this.log = [];
+
+                    // clear dur
+                    this.dur = null;
+
+                    // clear results
+                    this.results = [];
+                },
+
+                run_tests_topn: function(n) {
+                    this.clear();
                     this.is_testing = true;
 
                     setTimeout('app_test.run_tests_topn('+n+');app_test.vpp.$data.is_testing = false;', 500);
                 },
 
                 run_tests_rounds: function() {
-                    // clear log
-                    this.log = [];
+                    this.clear();
                     this.is_testing = true;
 
                     setTimeout('app_test.run_tests_rounds();app_test.vpp.$data.is_testing = false;', 500);
                 },
 
                 run_tests_random: function(n) {
-                    // clear log
-                    this.log = [];
+                    this.clear();
                     this.is_testing = true;
                     
-                    setTimeout('app_test.run_tests_random('+n+');app_test.vpp.$data.is_testing = false;', 500);
+                    setTimeout('app_test.run_tests_random('+this.n_times+');app_test.vpp.$data.is_testing = false;', 500);
                 },
 
                 tf2(v) {
@@ -426,19 +449,20 @@ var app_test = {
         app_test.vpp.$data.log.push(
             {n: n, dur: dur}
         );
-        app_test.vpp.$forceUpdate();
+        // app_test.vpp.$forceUpdate();
     },
 
     run_tests_rounds: function() {
         for (let n = 1000; n <= 10000; n+=1000) {
-            this.run_tests_topn(10);
+            this.run_tests_topn(n);
         }
     },
 
-    run_tests_random: function(n) {
-        for (let i = 0; i < n; i++) {
+    run_tests_random: function(n_times) {
+        var n = 1000;
+        for (let i = 0; i < n_times; i++) {
             // pick random 1000 numbers
-            var nums = math.pickRandom(Array.from(Array(10000).keys()), 1000);
+            var nums = math.pickRandom(Array.from(Array(10000).keys()), n);
             var results = [];
             
             const t0 = performance.now();
@@ -456,6 +480,7 @@ var app_test = {
             app_test.vpp.$data.log.push(
                 {n: n, dur: dur}   
             );
+            // app_test.vpp.$forceUpdate();
         }
     }
 };
