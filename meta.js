@@ -60,6 +60,10 @@ var metajs = {
             params['method_ci'] = 'CP';
         }
 
+        if (!params.hasOwnProperty('method_tau')) {
+            params['method.tau'] = 'DL';
+        }
+
         ///////////////////////////////////////////////////
         // (2) Read data
         ///////////////////////////////////////////////////
@@ -224,6 +228,323 @@ var metajs = {
 
         return ret;
     },
+
+
+    /**
+     * Meta-analysis of binary outcome data
+     * 
+     * The input `rs` is a list that contains the records.
+     * 
+     * [
+     *     [Et, Nt, Ec, Nc],
+     *     ...
+     * ]
+     * 
+     * Each records contains two values:
+     *     - Et: the number of events in the treatment group
+     *     - Nt: the number of observations in the treatment group
+     *     - Ec: the number of events in the control group
+     *     - Nc: the number of observations in the control group
+     * 
+     * For more information, check the R code
+     * https://rdrr.io/cran/meta/src/R/metabin.R
+     */
+     metabin: function(rs, params) {
+        ///////////////////////////////////////////////////
+        // (1) Check and set arguments
+        ///////////////////////////////////////////////////
+        // Yes, you can use default settings
+        if (typeof(params)=='undefined') {
+            params = {};
+        }
+
+        if (!params.hasOwnProperty('input_format')) {
+            params['input_format'] = 'PRIM_CAT_RAW';
+        }
+
+        if (!params.hasOwnProperty('sm')) {
+            params['sm'] = 'OR';
+        }
+
+        var incr = 0.5;
+        if (!params.hasOwnProperty('incr')) {
+            params['incr'] = incr;
+        } else {
+            // check float
+            incr = params['incr'];
+        }
+
+        if (!params.hasOwnProperty('incr_event')) {
+            params['incr_event'] = params['incr'];
+        }
+
+        if (!params.hasOwnProperty('method')) {
+            params['method'] = 'Inverse';
+        }
+
+        if (!params.hasOwnProperty('method_ci')) {
+            params['method_ci'] = 'CP';
+        }
+
+        if (!params.hasOwnProperty('method_tau')) {
+            params['method_tau'] = 'DL';
+        }
+
+        ///////////////////////////////////////////////////
+        // (2) Read data
+        ///////////////////////////////////////////////////
+
+
+        ///////////////////////////////////////////////////
+        // (3) Check length of variables
+        ///////////////////////////////////////////////////
+
+
+        ///////////////////////////////////////////////////
+        // (4) Subset, exclude studies, and subgroup
+        ///////////////////////////////////////////////////
+
+
+        ///////////////////////////////////////////////////
+        // (5) Store dataset
+        ///////////////////////////////////////////////////
+        var ds = {
+            Et: [],
+            Nt: [],
+            Ec: [],
+            Nc: []
+        };
+        // a mapping from ds index to rs index
+        var d2r = {};
+        for (let i = 0; i < rs.length; i++) {
+            const r = rs[i];
+            // check the r
+            if (r[0] > r[1]) {
+                // it's not possible that event > n
+                continue;
+
+            } else if (r[0] == 0 || r[2] == 0) {
+                // zero event??? increase both
+                ds.Et.push( r[0] + incr );
+                ds.Nt.push( r[1] + incr );
+                ds.Ec.push( r[2] + incr );
+                ds.Nc.push( r[3] + incr );
+
+            } else {
+                // for most case
+                ds.Et.push( r[0] );
+                ds.Nt.push( r[1] );
+                ds.Ec.push( r[2] );
+                ds.Nc.push( r[3] );
+            }
+            // add this mapping
+            d2r[ds.Et.length - 1] = i;
+        }
+        // double check the length of records
+        if (ds.Et.length == 0) {
+            // what???
+        } else if (ds.Et.length == 1) {
+            // what??? only one study?
+        } else {
+            // ok, more than 1
+        }
+
+        // convert the e and n to numjs format
+        ds.Et = nj.array(ds.Et);
+        ds.Nt = nj.array(ds.Nt);
+        ds.Ec = nj.array(ds.Ec);
+        ds.Nc = nj.array(ds.Nc);
+
+        // for the calculation
+        ds.n11 = ds.Et;
+        ds.n21 = ds.Ec;
+        ds.n1_ = ds.Nt;
+        ds.n2_ = ds.Nc;
+        ds.n__ = ds.Nt.add(ds.Nc);
+        ds.n12 = ds.Nt.subtract(ds.Et);
+        ds.n22 = ds.Nc.subtract(ds.Ec);
+        ds.n_1 = ds.n11.add(ds.n21);
+        ds.n_2 = ds.n12.add(ds.n22);
+
+        // one for calcualtion
+        ONE = nj.ones(ds.Et.size);
+
+        ///////////////////////////////////////////////////
+        // (6) Subset analysis
+        ///////////////////////////////////////////////////
+
+
+        ///////////////////////////////////////////////////
+        // (7) Calculate results for each study
+        ///////////////////////////////////////////////////
+        var TE = null;
+        var seTE = null;
+        var SM = null;
+        var SM_lower = null;
+        var SM_upper = null;
+
+        if (params.sm == 'OR') {
+            if (['MH', 'Inverse', 'GLMM', 'SSW'].includes(params.method)) {
+                // Cooper & Hedges (1994), p. 251-2
+                TE = nj.log(
+                    ds.n11.multiply(ds.n22).divide(
+                        ds.n12.multiply(ds.n21)
+                    )
+                );
+                seTE = (ONE.divide(ds.n11)
+                    .add(ONE.divide(ds.n12))
+                    .add(ONE.divide(ds.n21))
+                    .add(ONE.divide(ds.n22))
+                ).pow(0.5);
+
+                // backtrace 
+                SM = nj.exp(TE);
+                SM_lower = nj.exp(TE.subtract(seTE.multiply(1.96)));
+                SM_upper = nj.exp(TE.add(seTE.multiply(1.96)));
+            }
+
+        } else if (params.sm == 'RR') {
+            TE = nj.log(
+                (ds.n11.divide(ds.n1_)).divide(
+                    ds.n21.divide(ds.n2_)
+                )
+            );
+            // Hartung & Knapp (2001), Stat Med, equation (18)
+            seTE = (
+                ONE.divide(ds.n11)
+                .subtract(ONE.divide(ds.n1_))
+                .add(ONE.divide(ds.n21))
+                .subtract(ONE.divide(ds.n2_))
+            ).pow(0.5);
+
+            // backtrace 
+            SM = nj.exp(TE);
+            SM_lower = nj.exp(TE.subtract(seTE.multiply(1.96)));
+            SM_upper = nj.exp(TE.add(seTE.multiply(1.96)));
+        }
+
+        var _TE = Array(rs.length).fill(null);
+        var _seTE = Array(rs.length).fill(null);
+
+        ///////////////////////////////////////////////////
+        // (8) Do meta-analysis
+        ///////////////////////////////////////////////////
+        var fixed = null;
+        var random = null;
+
+        ///////////////////////////////
+        // Fixed effect model
+        ///////////////////////////////
+        if (params.method == 'MH') {
+            if (params.sm == 'OR') {
+                var A = ds.n11.multiply(ds.n22).divide(ds.n__);
+                var B = ds.n11.add(ds.n22).divide(ds.n__);
+                var C = ds.n12.multiply(ds.n21).divide(ds.n__);
+                var D = ds.n12.add(ds.n21).divide(ds.n__);
+
+                var w_fixed = C;
+                var wp_fixed = w_fixed.divide(w_fixed.sum());
+
+                var TE_fixed = math.log(A.sum() / C.sum());
+                var seTE_fixed = math.sqrt(
+                    (1 / (2 * A.sum()**2)) * (
+                        A.multiply(B).sum() 
+                        +
+                        math.exp(TE_fixed) * (
+                            B.multiply(C).sum() +
+                            A.multiply(D).sum()
+                        ) 
+                        +
+                        math.exp(TE_fixed)**2 * C.multiply(D).sum()
+                    )
+                );
+
+                var SM_fixed = math.exp(TE_fixed);
+                var SM_fixed_lower = math.exp(TE_fixed - 1.96 * seTE_fixed);
+                var SM_fixed_upper = math.exp(TE_fixed + 1.96 * seTE_fixed);
+
+                fixed = {
+                    TE: TE_fixed,
+                    seTE: seTE_fixed,
+                    w: w_fixed.tolist(),
+                    wp: wp_fixed.tolist(),
+
+                    SM: SM_fixed,
+                    SM_lower: SM_fixed_lower,
+                    SM_upper: SM_fixed_upper
+                }
+
+            } else if (params.sm == 'RR') {
+                var D = (ds.n1_.multiply(ds.n2_).multiply(ds.n_1)).subtract(
+                    ds.n11.multiply(ds.n21).multiply(ds.n__)
+                ).divide(ds.n__.pow(2));
+                var R = ds.n11.multiply(ds.n2_).divide(ds.n__);
+                var S = ds.n21.multiply(ds.n1_).divide(ds.n__);
+
+                var w_fixed = S;
+                var wp_fixed = w_fixed.divide(w_fixed.sum());
+
+                var TE_fixed = math.log(R.sum() / S.sum());
+                var seTE_fixed = math.sqrt(D.sum() / (R.sum() * S.sum()));
+
+                var SM_fixed = math.exp(TE_fixed);
+                var SM_fixed_lower = math.exp(TE_fixed - 1.96 * seTE_fixed);
+                var SM_fixed_upper = math.exp(TE_fixed + 1.96 * seTE_fixed);
+
+                fixed = {
+                    TE: TE_fixed,
+                    seTE: seTE_fixed,
+                    w: w_fixed.tolist(),
+                    wp: wp_fixed.tolist(),
+
+                    SM: SM_fixed,
+                    SM_lower: SM_fixed_lower,
+                    SM_upper: SM_fixed_upper
+                }
+            }
+        }
+        
+        ///////////////////////////////
+        // Heteroginity
+        ///////////////////////////////
+        var heterogeneity = this.heterogeneity_by_DL(TE, seTE);
+
+        ///////////////////////////////
+        // Random effect model
+        ///////////////////////////////
+
+        // TODO
+
+        ///////////////////////////////////////////////////
+        // (9) Finalize return object
+        ///////////////////////////////////////////////////
+        var ret = {
+            ds: {
+                Et: ds.Et.tolist(),
+                Nt: ds.Nt.tolist(),
+                Ec: ds.Ec.tolist(),
+                Nc: ds.Nc.tolist()
+            },
+            heterogeneity: heterogeneity,
+
+            // each study
+            TE: TE.tolist(),
+            seTE: seTE.tolist(),
+            SM: SM.tolist(),
+            SM_lower: SM_lower.tolist(),
+            SM_upper: SM_upper.tolist(),
+
+            // the MA result
+            fixed: fixed,
+            random: random,
+
+            // the settings
+            params: params
+        }
+
+        return ret;
+    },
+
 
     expit: function(v) {
         if (typeof(v) == 'number') {
@@ -455,13 +776,24 @@ var metajs = {
         var trP = math.sum(math.diag(P));
         var tau2 = (RSS - (k - p)) / trP;
 
-        //make sure that tau2 is >= con$tau2.min
+        // make sure that tau2 is >= tau2_min
+        // avoid neg val
         var tau2_min = 0;
         tau2 = math.max(tau2_min, tau2);
+
+        // se.tau2 <- sqrt(1/trP^2 * (2*(k-p) + 4*max(tau2,0)*trP + 2*max(tau2,0)^2*sum(P*P)))
+        var se_tau2 = math.sqrt(
+            1 / trP**2 * (
+                2 * (k - p) + 
+                4 * math.max(tau2, 0) * trP +
+                2 * math.max(tau2, 0) ** 2 * math.sum(math.multiply(P, P))
+            )
+        );
 
         return {
             I2: I2.TE,
             tau2: tau2,
+            se_tau2: se_tau2,
             pval_Q: pval_Q
         };
     }
