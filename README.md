@@ -1,7 +1,7 @@
 # Meta.js
 
 Meta.js is designed to be a JavaScript library for online meta-analysis.
-It's built on [math.js]() and [num.js]() to support tasks related meta-analysis.
+It's built on [math.js](https://mathjs.org/) and [NumJs](https://github.com/nicolaspanel/numjs) to support calculation tasks related meta-analysis.
 Meta.js is still in very early development stage, please don't use it for production purpose.
 
 Since Meta.js is purely built on JavaScript, it doesn't require any runtime installation, which means that you don't need to install R, Python, or any other libraries.
