@@ -1,3 +1,23 @@
+######################################################################
+#
+# Performance Test for Pairwise Meta-analysis
+#
+# This script includes two groups of tests:
+#
+# 1. Primary analysis for binary outcome data
+# 2. Incidence analysis for single proportions
+#
+# Each group contains three tests:
+# 
+# 1. Time spent on 1,000 outcomes
+# 2. Time spent on 1,000 to 10,000 outcome seperately
+# 3. Time spent on randomly selected 1,000 outcomes for 50 times
+#
+# The output will list the number of outcomes and the time spent
+#
+######################################################################
+
+
 library('meta')
 
 # load all data
