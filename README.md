@@ -9,7 +9,7 @@ Meta.js can be used to build serverless web applications, and we present a proto
 
 [https://ohnlp.github.io/MedTator/](https://ohnlp.github.io/MedTator/)
 
-![Meta.js Screenshot](https://raw.githubusercontent.com/OHNLP/Meta.js/static/img/screenshot.png)
+![Meta.js Screenshot](https://raw.githubusercontent.com/OHNLP/Meta.js/main/static/img/screenshot.png)
 
 ## Methods
 
