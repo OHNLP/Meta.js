@@ -7,7 +7,7 @@ Meta.js is still in very early development stage, please don't use it for produc
 Since Meta.js is purely built on JavaScript, it doesn't require any runtime installation, which means that you don't need to install R, Python, or any other libraries.
 Meta.js can be used to build serverless web applications, and we present a prototype to demonstrate how it looks:
 
-[https://ohnlp.github.io/MedTator/](https://ohnlp.github.io/MedTator/)
+[https://ohnlp.github.io/Meta.js/](https://ohnlp.github.io/Meta.js/)
 
 ![Meta.js Screenshot](https://raw.githubusercontent.com/OHNLP/Meta.js/main/static/img/screenshot.png)
 
