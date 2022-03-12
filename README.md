@@ -20,6 +20,20 @@ At present, Meta.js implements the basic functions for meta-analysis of single p
 To validate the correctness and evaluate the performance of Meta.js, the following files are included:
 
 1. `make_sample.py`: this Python script can make test dataset of binary outcomes for test purpose.
-2. `pwma.R`: this R script provides the performance test. We test it in R 3.6.3 (x86_64-pc-linux-gnu) with `meta` 4.18-0 version.
+2. `pwma.R`: this R script provides the performance test.
 3. `sample.csv`: the sample data file for test, which contains 10,000 outcomes, and each outcome contains random number of studies (1-100)
 
+To evaluate the performance of Meta.js, we conducted two experiments, 1) calculation of the fixed effects on randomly selected 1,000 outcomes for 50 times, and 2) calculation of the fixed effects of different number of outcomes. In both R and JavaScript versions, the test dataset is pre-loaded, and the calculation time is recorded.
+
+We tested our program on a machine with Intel Core i5-10400 and 16G ram, running Ubuntu . The Google Chrome is Version 99.0.4844.51 (Official 64-bit). The R environment is 3.6.3 with `meta` library 4.18-0 and RStudio 1.4.1106. 
+
+The test is The preliminary results are as follows:
+
+<table style="width:100%;">
+<tr>
+  <td><img src="https://raw.githubusercontent.com/OHNLP/Meta.js/main/static/img/perf-RvsJS.png"></td>
+  <td><img src="https://raw.githubusercontent.com/OHNLP/Meta.js/main/static/img/perf-10k.png"></td>
+</tr>
+</table>
+
+The median time of the JavaScript version is 1.12s while the R version is 17.94s for 1000 outcomes. As the number of outcomes increases, the absolute differences in time also increase.
