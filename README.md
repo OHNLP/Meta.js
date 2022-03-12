@@ -27,12 +27,15 @@ To evaluate the performance of Meta.js, we conducted two experiments, 1) calcula
 
 We tested our program on a machine with Intel Core i5-10400 and 16G ram, running Ubuntu . The Google Chrome is Version 99.0.4844.51 (Official 64-bit). The R environment is 3.6.3 with `meta` library 4.18-0 and RStudio 1.4.1106. 
 
-The test is The preliminary results are as follows:
+The preliminary results are as follows:
 
 <table style="width:100%;">
 <tr>
   <td><img src="https://raw.githubusercontent.com/OHNLP/Meta.js/main/static/img/perf-RvsJS.png"></td>
   <td><img src="https://raw.githubusercontent.com/OHNLP/Meta.js/main/static/img/perf-10k.png"></td>
+</tr>
+<tr>
+  <td colspan="2">* the actual value may vary on differnet machines</td>
 </tr>
 </table>
 
