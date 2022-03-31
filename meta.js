@@ -4,6 +4,26 @@
  * Please make sure the num.js and math.js are loaded
  */
 var metajs = {
+    backtransf: function(x, sm, value, n) {
+        return x;
+    },
+
+    asin2p: function(x, n, value) {
+        if (typeof(n) == 'undefined') {
+            n = null;
+        }
+        if (typeof(value) == 'undefined') {
+            value = 'mean';
+        }
+
+        var minimum = Math.asin(0);
+        var maximum = Math.asin(1);
+
+        if (n != null) {
+            minimum = 0.5 * (Math.asin(Math.sqrt(0 / (n + 1))) + Math.asin(Math.sqrt((0 + 1) / (n + 1))))
+            maximum = 0.5 * (Math.asin(Math.sqrt(n / (n + 1))) + Math.asin(Math.sqrt((n + 1) / (n + 1))))
+        }
+    },
 
     /**
      * Meta-analysis of single proportions
@@ -143,11 +163,33 @@ var metajs = {
             seTE = (ONE.divide(ds.e).add(
                 ONE.divide(ds.n.subtract(ds.e))
             )).pow(0.5);
+
+        } else if (params.sm == 'PFT') {
+            TE = math.dotMultiply(
+                0.5,
+                math.add(
+                    math.asin(math.sqrt(math.dotDivide(e, math.add(n, 1)))),
+                    math.asin(math.sqrt(math.dotDivide(math.add(e, 1), math.add(n, 1))))
+                )
+            );
+            seTE = math.sqrt(
+                math.dotDivide(
+                    1,
+                    math.add(
+                        2,
+                        math.dotMultiply(
+                            4,
+                            n
+                        )
+                    )
+                )
+            );
         }
 
         var SM = [];
         var SM_lower = [];
         var SM_upper = [];
+
         // var SM_RS = ds.e.tolist().map((e,i)=>binom.test(e, ds.n.get(i)));
         for (let i = 0; i < ds.e.size; i++) {
             var _e = ds.e.get(i);
@@ -397,7 +439,7 @@ var metajs = {
                     .add(ONE.divide(ds.n22))
                 ).pow(0.5);
 
-                // backtrace 
+                // backtransf
                 SM = nj.exp(TE);
                 SM_lower = nj.exp(TE.subtract(seTE.multiply(1.96)));
                 SM_upper = nj.exp(TE.add(seTE.multiply(1.96)));
@@ -417,7 +459,7 @@ var metajs = {
                 .subtract(ONE.divide(ds.n2_))
             ).pow(0.5);
 
-            // backtrace 
+            // backtransf 
             SM = nj.exp(TE);
             SM_lower = nj.exp(TE.subtract(seTE.multiply(1.96)));
             SM_upper = nj.exp(TE.add(seTE.multiply(1.96)));
