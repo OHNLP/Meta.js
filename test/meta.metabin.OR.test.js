@@ -48,13 +48,13 @@ describe('testing metajs metabin functions', () => {
        
        var vals = df.loc({
            rows: df['outcome'].eq(ocn), 
-           columns: ['study', 'Et', 'Nt', 'Ec', 'Nc']
+           columns: ['Et', 'Nt', 'Ec', 'Nc', 'study']
        }).values;
 
        it('case ' + ocn + ' should be correct', (done) => {
 
             metajs.metabin(vals, {
-                
+
             });
             assert.equal(
                 1, 

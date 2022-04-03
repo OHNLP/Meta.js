@@ -339,10 +339,10 @@ export const metajs = {
 
                 seTE = math.sqrt(
                     math.add(
-                        math.divide(1, math.add(ds.n11, ds.incr_e)),
-                        math.divide(1, math.add(ds.n12, ds.incr_e)),
-                        math.divide(1, math.add(ds.n21, ds.incr_c)),
-                        math.divide(1, math.add(ds.n22, ds.incr_c))
+                        math.dotDivide(1, math.add(ds.n11, ds.incr_e)),
+                        math.dotDivide(1, math.add(ds.n12, ds.incr_e)),
+                        math.dotDivide(1, math.add(ds.n21, ds.incr_c)),
+                        math.dotDivide(1, math.add(ds.n22, ds.incr_c))
                     )
                 );
 
@@ -369,23 +369,74 @@ export const metajs = {
             }
 
         } else if (params.sm == 'RR') {
-            TE = nj.log(
-                (ds.n11.divide(ds.n1_)).divide(
-                    ds.n21.divide(ds.n2_)
+            // TE = nj.log(
+            //     (ds.n11.divide(ds.n1_)).divide(
+            //         ds.n21.divide(ds.n2_)
+            //     )
+            // );
+            TE = math.log(
+                math.dotDivide(
+                    math.dotDivide(
+                        math.add(ds.n11, ds.incr_e),
+                        math.add(ds.n1_, ds.incr_e)
+                    ),
+                    math.dotDivide(
+                        math.add(ds.n21, ds.incr_c),
+                        math.add(ds.n2_, ds.incr_c)
+                    ),
                 )
             );
             // Hartung & Knapp (2001), Stat Med, equation (18)
-            seTE = (
-                ONE.divide(ds.n11)
-                .subtract(ONE.divide(ds.n1_))
-                .add(ONE.divide(ds.n21))
-                .subtract(ONE.divide(ds.n2_))
-            ).pow(0.5);
+            // seTE = (
+            //     ONE.divide(ds.n11)
+            //     .subtract(ONE.divide(ds.n1_))
+            //     .add(ONE.divide(ds.n21))
+            //     .subtract(ONE.divide(ds.n2_))
+            // ).pow(0.5);
+            seTE = math.sqrt(
+                math.add(
+                    math.divide(
+                        1,
+                        math.add(ds.n11, ds.incr_e)
+                    ),
+                    math.divide(
+                        -1,
+                        math.add(ds.n1_, ds.incr_e)
+                    ),
+                    math.divide(
+                        1,
+                        math.add(ds.n21, ds.incr_c)
+                    ),
+                    math.divide(
+                        -1,
+                        math.add(ds.n2_, ds.incr_c)
+                    )
+                )
+            );
 
             // backtransf 
-            SM = nj.exp(TE);
-            SM_lower = nj.exp(TE.subtract(seTE.multiply(1.96)));
-            SM_upper = nj.exp(TE.add(seTE.multiply(1.96)));
+            // SM = nj.exp(TE);
+            // SM_lower = nj.exp(TE.subtract(seTE.multiply(1.96)));
+            // SM_upper = nj.exp(TE.add(seTE.multiply(1.96)));
+            SM = math.exp(TE);
+            SM_lower = math.exp(
+                math.subtract(
+                    TE,
+                    math.multiply(
+                        1.96,
+                        seTE
+                    )
+                )
+            );
+            SM_upper = math.exp(
+                math.add(
+                    TE,
+                    math.multiply(
+                        1.96,
+                        seTE
+                    )
+                )
+            );
         }
 
         var _TE = Array(rs.length).fill(null);
@@ -402,42 +453,7 @@ export const metajs = {
         ///////////////////////////////
         if (['MH'].includes(params.method)) {
             if (params.sm == 'OR') {
-                var A = ds.n11.multiply(ds.n22).divide(ds.n__);
-                var B = ds.n11.add(ds.n22).divide(ds.n__);
-                var C = ds.n12.multiply(ds.n21).divide(ds.n__);
-                var D = ds.n12.add(ds.n21).divide(ds.n__);
-
-                var w_fixed = C;
-                var wp_fixed = w_fixed.divide(w_fixed.sum());
-
-                var TE_fixed = math.log(A.sum() / C.sum());
-                var seTE_fixed = math.sqrt(
-                    (1 / (2 * A.sum()**2)) * (
-                        A.multiply(B).sum() 
-                        +
-                        math.exp(TE_fixed) * (
-                            B.multiply(C).sum() +
-                            A.multiply(D).sum()
-                        ) 
-                        +
-                        math.exp(TE_fixed)**2 * C.multiply(D).sum()
-                    )
-                );
-
-                var SM_fixed = math.exp(TE_fixed);
-                var SM_fixed_lower = math.exp(TE_fixed - 1.96 * seTE_fixed);
-                var SM_fixed_upper = math.exp(TE_fixed + 1.96 * seTE_fixed);
-
-                fixed = {
-                    TE: TE_fixed,
-                    seTE: seTE_fixed,
-                    w: w_fixed.tolist(),
-                    wp: wp_fixed.tolist(),
-
-                    SM: SM_fixed,
-                    SM_lower: SM_fixed_lower,
-                    SM_upper: SM_fixed_upper
-                }
+                fixed = this.__calc_fixed_OR_by_MH(ds);
 
             } else if (params.sm == 'RR') {
                 var D = (ds.n1_.multiply(ds.n2_).multiply(ds.n_1)).subtract(
@@ -472,7 +488,8 @@ export const metajs = {
         ///////////////////////////////
         // Heteroginity
         ///////////////////////////////
-        var heterogeneity = this.heterogeneity_by_DL(TE, seTE);
+        var heterogeneity = null;
+        // this.heterogeneity_by_DL(TE, seTE);
 
         ///////////////////////////////
         // Random effect model
@@ -484,20 +501,15 @@ export const metajs = {
         // (9) Finalize return object
         ///////////////////////////////////////////////////
         var ret = {
-            ds: {
-                Et: ds.Et.tolist(),
-                Nt: ds.Nt.tolist(),
-                Ec: ds.Ec.tolist(),
-                Nc: ds.Nc.tolist()
-            },
+            ds: ds,
             heterogeneity: heterogeneity,
 
             // each study
-            TE: TE.tolist(),
-            seTE: seTE.tolist(),
-            SM: SM.tolist(),
-            SM_lower: SM_lower.tolist(),
-            SM_upper: SM_upper.tolist(),
+            TE: TE,
+            seTE: seTE,
+            SM: SM,
+            SM_lower: SM_lower,
+            SM_upper: SM_upper,
 
             // the MA result
             fixed: fixed,
@@ -509,6 +521,104 @@ export const metajs = {
 
         return ret;
     },
+
+    __calc_fixed_OR_by_MH: function(ds) {
+        var A = math.dotDivide(
+            math.dotMultiply(
+                math.add(ds.n11, ds.incr_e),
+                math.add(ds.n22, ds.incr_c)
+            ),
+            math.add(
+                ds.n__,
+                math.dotMultiply(2, ds.incr_e),
+                math.dotMultiply(2, ds.incr_c)
+            )
+        );
+
+        var B = math.dotDivide(
+            math.add(
+                ds.n11,
+                ds.incr_e,
+                ds.n22,
+                ds.incr_c
+            ),
+            math.add(
+                ds.n__,
+                math.dotMultiply(2, ds.incr_e),
+                math.dotMultiply(2, ds.incr_c)
+            )
+        );
+
+        var C = math.dotDivide(
+            math.dotMultiply(
+                math.add(ds.n12, ds.incr_e),
+                math.add(ds.n21, ds.incr_c)
+            ),
+            math.add(
+                ds.n__,
+                math.dotMultiply(2, ds.incr_e),
+                math.dotMultiply(2, ds.incr_c)
+            )
+        );
+
+        var D = math.dotDivide(
+            math.add(
+                ds.n12,
+                ds.incr_e,
+                ds.n21,
+                ds.incr_c
+            ),
+            math.add(
+                ds.n__,
+                math.dotMultiply(2, ds.incr_e),
+                math.dotMultiply(2, ds.incr_c)
+            )
+        );
+
+        var w_fixed = C;
+        var wp_fixed = math.dotDivide(
+            w_fixed,
+            math.sum(w_fixed)
+        );
+
+        // TODO remove NaN from sum
+        var TE_fixed = math.log(
+            math.divide(
+                math.sum(A),
+                math.sum(C)
+            )
+        );
+
+        var seTE_fixed = math.sqrt(
+            (1 / (2 * (math.sum(A))**2)) * (
+                math.sum(math.dotMultiply(A, B)) 
+                +
+                math.exp(TE_fixed) * (
+                    math.sum(math.dotMultiply(B, C)) +
+                    math.sum(math.dotMultiply(A, D))
+                ) 
+                +
+                math.exp(TE_fixed)**2 * math.sum(math.dotMultiply(C, D))
+            )
+        );
+
+        var SM_fixed = math.exp(TE_fixed);
+        var SM_fixed_lower = math.exp(TE_fixed - 1.96 * seTE_fixed);
+        var SM_fixed_upper = math.exp(TE_fixed + 1.96 * seTE_fixed);
+
+        var fixed = {
+            TE: TE_fixed,
+            seTE: seTE_fixed,
+            w: w_fixed,
+            wp: wp_fixed,
+
+            SM: SM_fixed,
+            SM_lower: SM_fixed_lower,
+            SM_upper: SM_fixed_upper
+        };
+
+        return fixed;
+    }
 
 
 }
