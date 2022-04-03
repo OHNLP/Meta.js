@@ -1,0 +1,39 @@
+{
+  "name": "meta.js",
+  "version": "1.0.0",
+  "description": "Meta.js is designed to be a JavaScript library for online meta-analysis. It's built on [math.js](https://mathjs.org/) and [NumJs](https://github.com/nicolaspanel/numjs) to support calculation tasks related meta-analysis. Meta.js is still in very early development stage, please don't use it for production purpose.",
+  "main": "meta.js",
+  "directories": {
+    "test": "tests"
+  },
+  "type": "module",
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OHNLP/Meta.js.git"
+  },
+  "keywords": [],
+  "author": "Huan He",
+  "license": "Apache 2.0",
+  "bugs": {
+    "url": "https://github.com/OHNLP/Meta.js/issues"
+  },
+  "homepage": "https://github.com/OHNLP/Meta.js#readme",
+  "devDependencies": {
+    "assert": "^2.0.0",
+    "danfojs": "^1.0.5",
+    "danfojs-node": "^1.0.5",
+    "jest": "^27.5.1",
+    "mathjs": "^10.4.2",
+    "mocha": "^9.2.2",
+    "papaparse": "^5.3.2",
+    "source-map-loader": "^3.0.1",
+    "ts-jest": "^27.1.4",
+    "ts-loader": "^9.2.8",
+    "typescript": "^4.6.3",
+    "webpack": "^5.71.0",
+    "webpack-cli": "^4.9.2"
+  }
+}

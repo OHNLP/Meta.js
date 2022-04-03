@@ -291,7 +291,7 @@ var metajs = {
      * For more information, check the R code
      * https://rdrr.io/cran/meta/src/R/metabin.R
      */
-     metabin: function(rs, params) {
+    metabin: function(rs, params) {
         ///////////////////////////////////////////////////
         // (1) Check and set arguments
         ///////////////////////////////////////////////////
