@@ -291,7 +291,7 @@ export const metajs = {
         }
 
         if (!params.hasOwnProperty('sm')) {
-            params['sm'] = 'PLOGIT';
+            params['sm'] = 'PFT';
         }
 
         var incr = 0.5;
