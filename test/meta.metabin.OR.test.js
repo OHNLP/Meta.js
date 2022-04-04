@@ -15,12 +15,14 @@ var rs2 = null;
 
 Papa.parse(f, {
     header: true,
+    dynamicTyping: true,
     comments: "#",
     complete: function(rs) {
         console.log('* loaded ' + rs.data.length + ' records in input testset');
         rs1 = rs;
         Papa.parse(fo, {
             header: true,
+            dynamicTyping: true,
             comments: "#",
             complete: function(rs) {
                 console.log('* loaded ' + rs.data.length + ' records in result testset');
@@ -32,6 +34,19 @@ Papa.parse(f, {
         });
     }
 });
+
+function _tf2(v) {
+    if (isNaN(v)) {
+        return 'NA';
+    }
+    if (v == null) {
+        return 'NA'
+    }
+    if (v == 'NA') {
+        return 'NA';
+    }
+    return v.toFixed(2);
+}
 
 function start_test() {
 describe('testing metajs metabin functions', () => {
@@ -51,14 +66,33 @@ describe('testing metajs metabin functions', () => {
            columns: ['Et', 'Nt', 'Ec', 'Nc', 'study']
        }).values;
 
-       it('case ' + ocn + ' should be correct', (done) => {
+       var gtrs = dfr.loc({
+           rows: dfr['outcome'].eq(ocn), 
+           columns: ['TE.fixed', 'lower.fixed', 'upper.fixed',
+                     'TE.random', 'lower.random', 'upper.random']
+        }).values[0];
 
-            metajs.metabin(vals, {
-
+       it('case ' + ocn + ', fixed OR should be ' + _tf2(gtrs[0]) + '(' +_tf2(gtrs[1]) + ',' + _tf2(gtrs[2]) + ')', (done) => {
+            var rst = metajs.metabin(vals, {
+                sm: 'OR'
             });
-            assert.equal(
-                1, 
-                1
+
+            assert.deepEqual(
+                [_tf2(rst.fixed.TE), _tf2(rst.fixed.TE_lower), _tf2(rst.fixed.TE_upper)], 
+                [_tf2(gtrs[0]), _tf2(gtrs[1]), _tf2(gtrs[2])]
+            );
+
+            done();
+        });
+
+        it('case ' + ocn + ', random OR should be ' + _tf2(gtrs[3]) + '(' +_tf2(gtrs[4]) + ',' + _tf2(gtrs[5]) + ')', (done) => {
+            var rst = metajs.metabin(vals, {
+                sm: 'OR'
+            });
+
+            assert.deepEqual(
+                [_tf2(rst.random.TE), _tf2(rst.random.TE_lower), _tf2(rst.random.TE_upper)], 
+                [_tf2(gtrs[3]), _tf2(gtrs[4]), _tf2(gtrs[5])]
             );
 
             done();

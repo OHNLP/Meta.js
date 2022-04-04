@@ -370,7 +370,7 @@ export const metajs = {
         // double check the length of records
         if (ds.e.length == 0) {
             // what??? nothing to do with 0 studies
-            return null;
+            return this.__mk_metaprop_nan(rs, params);
 
         } else if (ds.e.length == 1) {
             // what??? only one study?
@@ -805,7 +805,7 @@ export const metajs = {
         // double check the length of records
         if (ds.Et.length == 0) {
             // what??? no qualified records???
-            return null;
+            return this.__mk_metaprop_nan(rs, params);
 
         } else if (ds.Et.length == 1) {
             // what??? only one study?
@@ -1053,6 +1053,53 @@ export const metajs = {
         return ret;
     },
 
+    __mk_metaprop_nan: function(rs, params) {
+        var NaNs = Array(rs.length).fill(NaN);
+        var _params = JSON.parse(JSON.stringify(params));
+
+        return {
+            ds: {},
+            heterogeneity: {
+                I2: NaN, tau2: NaN, pval_Q: NaN
+            },
+
+            // each study
+            TE: NaNs,
+            seTE: NaNs,
+            SM: NaNs,
+            SM_lower: NaNs,
+            SM_upper: NaNs,
+
+            // the MA result
+            fixed: {
+                TE: NaN,
+                seTE: NaN,
+                TE_lower: NaN,
+                TE_upper: NaN,
+                w: NaNs,
+                wp: NaNs,
+
+                SM: NaN,
+                SM_lower: NaN,
+                SM_upper: NaN
+            },
+            random: {
+                TE: NaN,
+                seTE: NaN,
+                TE_lower: NaN,
+                TE_upper: NaN,
+                w: NaNs,
+                wp: NaNs,
+
+                SM: NaN,
+                SM_lower: NaN,
+                SM_upper: NaN
+            },
+
+            // the settings
+            params: _params
+        }
+    },
 
     __calc_fixed_OR_by_MH: function(ds) {
         var A = math.dotDivide(
@@ -1134,13 +1181,18 @@ export const metajs = {
             )
         );
 
+        var TE_fixed_lower = TE_fixed - 1.96 * seTE_fixed;
+        var TE_fixed_upper = TE_fixed + 1.96 * seTE_fixed
+
         var SM_fixed = math.exp(TE_fixed);
-        var SM_fixed_lower = math.exp(TE_fixed - 1.96 * seTE_fixed);
-        var SM_fixed_upper = math.exp(TE_fixed + 1.96 * seTE_fixed);
+        var SM_fixed_lower = math.exp(TE_fixed_lower);
+        var SM_fixed_upper = math.exp(TE_fixed_upper);
 
         var fixed = {
             TE: TE_fixed,
             seTE: seTE_fixed,
+            TE_lower: TE_fixed_lower,
+            TE_upper: TE_fixed_upper,
             w: w_fixed,
             wp: wp_fixed,
 
@@ -1242,13 +1294,18 @@ export const metajs = {
             )
         );
 
+        var TE_fixed_lower = TE_fixed - 1.96 * seTE_fixed;
+        var TE_fixed_upper = TE_fixed + 1.96 * seTE_fixed
+
         var SM_fixed = math.exp(TE_fixed);
-        var SM_fixed_lower = math.exp(TE_fixed - 1.96 * seTE_fixed);
-        var SM_fixed_upper = math.exp(TE_fixed + 1.96 * seTE_fixed);
+        var SM_fixed_lower = math.exp(TE_fixed_lower);
+        var SM_fixed_upper = math.exp(TE_fixed_upper);
 
         var fixed = {
             TE: TE_fixed,
             seTE: seTE_fixed,
+            TE_lower: TE_fixed_lower,
+            TE_upper: TE_fixed_upper,
             w: w_fixed,
             wp: wp_fixed,
 

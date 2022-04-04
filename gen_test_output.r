@@ -25,14 +25,14 @@ for (i in 1:length(ocns)) {
     data = df, 
     studlab = study, 
     sm = "OR", 
-    method = "Inverse", 
+    method = "MH", 
     method.tau = "DL", 
     prediction = FALSE, 
     hakn = FALSE
   )
   
   df_rst = data.frame(
-    "Outcome" = c(paste(ocn)), 
+    "outcome" = c(paste(ocn)), 
     "sm" = c('OR'),
     "TE.fixed" = c(r$TE.fixed), 
     "lower.fixed" = c(r$lower.fixed), 
@@ -58,5 +58,8 @@ write.csv(
   file='testsets/test_result_OR.csv', 
   row.names = FALSE
 )
+
+# make the output for incidence
+
 
 forest(r, backtransf = FALSE)
