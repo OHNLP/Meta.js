@@ -7,6 +7,11 @@ var rs = [
     [24,230,24,281, 'S2', 'T','C'],
 ]
 
-var rst = metajs.metabin(rs);
+var rst = metajs.metabin(
+    rs,
+    {
+        'sm': 'RR'
+    }
+);
 
 console.log(rst);

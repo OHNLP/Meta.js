@@ -395,19 +395,19 @@ export const metajs = {
             // ).pow(0.5);
             seTE = math.sqrt(
                 math.add(
-                    math.divide(
+                    math.dotDivide(
                         1,
                         math.add(ds.n11, ds.incr_e)
                     ),
-                    math.divide(
+                    math.dotDivide(
                         -1,
                         math.add(ds.n1_, ds.incr_e)
                     ),
-                    math.divide(
+                    math.dotDivide(
                         1,
                         math.add(ds.n21, ds.incr_c)
                     ),
-                    math.divide(
+                    math.dotDivide(
                         -1,
                         math.add(ds.n2_, ds.incr_c)
                     )
@@ -422,7 +422,7 @@ export const metajs = {
             SM_lower = math.exp(
                 math.subtract(
                     TE,
-                    math.multiply(
+                    math.dotMultiply(
                         1.96,
                         seTE
                     )
@@ -431,7 +431,7 @@ export const metajs = {
             SM_upper = math.exp(
                 math.add(
                     TE,
-                    math.multiply(
+                    math.dotMultiply(
                         1.96,
                         seTE
                     )
@@ -456,32 +456,7 @@ export const metajs = {
                 fixed = this.__calc_fixed_OR_by_MH(ds);
 
             } else if (params.sm == 'RR') {
-                var D = (ds.n1_.multiply(ds.n2_).multiply(ds.n_1)).subtract(
-                    ds.n11.multiply(ds.n21).multiply(ds.n__)
-                ).divide(ds.n__.pow(2));
-                var R = ds.n11.multiply(ds.n2_).divide(ds.n__);
-                var S = ds.n21.multiply(ds.n1_).divide(ds.n__);
-
-                var w_fixed = S;
-                var wp_fixed = w_fixed.divide(w_fixed.sum());
-
-                var TE_fixed = math.log(R.sum() / S.sum());
-                var seTE_fixed = math.sqrt(D.sum() / (R.sum() * S.sum()));
-
-                var SM_fixed = math.exp(TE_fixed);
-                var SM_fixed_lower = math.exp(TE_fixed - 1.96 * seTE_fixed);
-                var SM_fixed_upper = math.exp(TE_fixed + 1.96 * seTE_fixed);
-
-                fixed = {
-                    TE: TE_fixed,
-                    seTE: seTE_fixed,
-                    w: w_fixed.tolist(),
-                    wp: wp_fixed.tolist(),
-
-                    SM: SM_fixed,
-                    SM_lower: SM_fixed_lower,
-                    SM_upper: SM_fixed_upper
-                }
+                fixed = this.__calc_fixed_RR_by_MH(ds);
             }
         }
         
@@ -618,8 +593,114 @@ export const metajs = {
         };
 
         return fixed;
-    }
+    },
 
+    __calc_fixed_RR_by_MH: function(ds) {
+        var D = math.dotDivide(
+            math.subtract(
+                math.dotMultiply(
+                    math.add(
+                        ds.n1_,
+                        math.dotMultiply(2, ds.incr_e)
+                    ),
+                    math.dotMultiply(
+                        math.add(
+                            ds.n2_, 
+                            math.dotMultiply(2, ds.incr_c)
+                        ),
+                        math.add(
+                            ds.n_1,
+                            ds.incr_e, 
+                            ds.incr_c
+                        )
+                    )
+                ),
+                math.dotMultiply(
+                    math.add(ds.n11, ds.incr_e),
+                    math.dotMultiply(
+                        math.add(ds.n21, ds.incr_c),
+                        math.add(
+                            ds.n__,
+                            math.dotMultiply(2, ds.incr_e),
+                            math.dotMultiply(2, ds.incr_c)
+                        )
+                    )
+                )
+            ),
+            math.dotPow(
+                math.add(
+                    ds.n__,
+                    math.dotMultiply(2, ds.incr_e),
+                    math.dotMultiply(2, ds.incr_c)
+                ), 
+                2
+            )
+        );
+
+        var R = math.dotDivide(
+            math.dotMultiply(
+                math.add(ds.n11, ds.incr_e),
+                math.add(ds.n2_, math.dotMultiply(2, ds.incr_c))
+            ),
+            math.add(
+                ds.n__,
+                math.dotMultiply(2, ds.incr_e),
+                math.dotMultiply(2, ds.incr_c)
+            )
+        );
+
+        var S = math.dotDivide(
+            math.dotMultiply(
+                math.add(ds.n21, ds.incr_c),
+                math.add(ds.n1_, math.dotMultiply(2, ds.incr_e))
+            ),
+            math.add(
+                ds.n__,
+                math.dotMultiply(2, ds.incr_e),
+                math.dotMultiply(2, ds.incr_c)
+            )
+        );
+
+        var w_fixed = S;
+        var wp_fixed = math.dotDivide(
+            w_fixed,
+            math.sum(w_fixed)
+        );
+
+        var TE_fixed = math.log(
+            math.divide(
+                math.sum(R),
+                math.sum(S)
+            )
+        );
+
+        var seTE_fixed = math.sqrt(
+            math.divide(
+                math.sum(D),
+                math.multiply(
+                    math.sum(R),
+                    math.sum(S)
+                )
+            )
+        );
+
+        var SM_fixed = math.exp(TE_fixed);
+        var SM_fixed_lower = math.exp(TE_fixed - 1.96 * seTE_fixed);
+        var SM_fixed_upper = math.exp(TE_fixed + 1.96 * seTE_fixed);
+
+        var fixed = {
+            TE: TE_fixed,
+            seTE: seTE_fixed,
+            w: w_fixed,
+            wp: wp_fixed,
+
+            SM: SM_fixed,
+            SM_lower: SM_fixed_lower,
+            SM_upper: SM_fixed_upper
+        };
+
+        return fixed;
+    },
 
 }
 
