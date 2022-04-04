@@ -79,6 +79,9 @@ export const metajs = {
      * https://rdrr.io/cran/meta/src/R/meta-het.R
      */
     calcH: function(Q, df, level) {
+        if (typeof(level) == 'undefined') {
+            level = 0.95;
+        }
         //
         // Calculate H
         // Higgins & Thompson (2002), Statistics in Medicine, 21, 1539-58
@@ -86,6 +89,7 @@ export const metajs = {
         var k = df + 1;
         var H = NaN;
         var selogH = NaN;
+
         if (isNaN(k)) {
             
         } else {
@@ -222,12 +226,28 @@ export const metajs = {
             params['method'] = 'MH';
         }
 
+        if (!params.hasOwnProperty('method_bias')) {
+            params['method_bias'] = 'Harbord';
+        }
+
         if (!params.hasOwnProperty('method_ci')) {
             params['method_ci'] = 'CP';
         }
 
         if (!params.hasOwnProperty('method_tau')) {
             params['method_tau'] = 'DL';
+        }
+
+        if (!params.hasOwnProperty('method_tau_ci')) {
+            params['method_tau_ci'] = 'J';
+        }
+
+        if (!params.hasOwnProperty('prediction')) {
+            params['prediction'] = false;
+        }
+
+        if (!params.hasOwnProperty('model_glmm')) {
+            params['model_glmm'] = 'UM.FS';
         }
 
         ///////////////////////////////////////////////////
@@ -463,21 +483,81 @@ export const metajs = {
         ///////////////////////////////
         // Heteroginity
         ///////////////////////////////
-        var heterogeneity = null;
-        // this.heterogeneity_by_DL(TE, seTE);
+        var het = null;
+        // heterogeneity = this.__calc_heterogeneity_by_DL(TE, seTE);
+        het = this.__calc_heterogeneity_by_DL_with_TE_tau(
+            TE, 
+            seTE, 
+            fixed.TE
+        );
 
         ///////////////////////////////
         // Random effect model
         ///////////////////////////////
 
-        // TODO
+        if (params.method == 'SSW') {
+            // metagen.R
+            // w.random <- n.e * n.c / (n.e + n.c)
+            // w.random[exclude] <- 0
+            // TE.random <- weighted.mean(TE, w.random, na.rm = TRUE)
+            // seTE.random <- sqrt(sum(w.random^2 * (seTE^2 + m$tau^2), na.rm = TRUE) /
+            //                     sum(w.random, na.rm = TRUE)^2)
+            // ##
+            // w.random[is.na(w.random)] <- 0
+
+        } else {
+            // metagen.R
+            // w.random <- 1/(seTE^2 + sum(tau2.calc, na.rm = TRUE))
+            // w.random[is.na(w.random) | is.na(TE) | exclude] <- 0
+            // TE.random <- weighted.mean(TE, w.random, na.rm = TRUE)
+            // seTE.random <- sqrt(1/sum(w.random, na.rm = TRUE))
+            var w_random = math.dotDivide(
+                1,
+                math.add(
+                    math.sum(het.tau2),
+                    math.dotPow(seTE, 2)
+                )
+            );
+            w_random = this.fillna(w_random);
+
+            var wp_random = math.dotDivide(
+                w_random,
+                math.sum(w_random)
+            );
+
+            var TE_random = math.sum(
+                math.dotMultiply(TE, wp_random)
+            );
+
+            var seTE_random = math.sqrt(
+                math.dotDivide(
+                    1,
+                    math.sum(w_random)
+                )
+            );
+
+            var SM_random = math.exp(TE_random);
+            var SM_random_lower = math.exp(TE_random - 1.96 * seTE_random);
+            var SM_random_upper = math.exp(TE_random + 1.96 * seTE_random);
+
+            random = {
+                TE: TE_random,
+                seTE: seTE_random,
+                w: w_random,
+                wp: wp_random,
+
+                SM: SM_random,
+                SM_lower: SM_random_lower,
+                SM_upper: SM_random_upper
+            };
+        }
 
         ///////////////////////////////////////////////////
         // (9) Finalize return object
         ///////////////////////////////////////////////////
         var ret = {
             ds: ds,
-            heterogeneity: heterogeneity,
+            heterogeneity: het,
 
             // each study
             TE: TE,
@@ -700,6 +780,175 @@ export const metajs = {
         };
 
         return fixed;
+    },
+
+    /**
+     * Heterogeneity estimation for standard model (rma.uni)
+     * by the DerSimonian-Laird (DL) estimator
+     * 
+     * For more information:
+     * https://rdrr.io/cran/meta/src/R/hetcalc.R
+     * and 
+     * https://rdrr.io/cran/metafor/src/R/rma.uni.r
+     */
+    __calc_heterogeneity_by_DL: function(TE, seTE) {
+        var k = TE.length;
+        var p = 1;
+
+        var vi = math.dotPow(seTE, 2);
+        var wi = math.dotDivide(1, vi);
+        var W = math.diag(wi);
+        
+        var X = math.ones(TE.length, 1);
+        var Y = math.transpose([TE]);
+        var stXWX = this.inv_calc(X, W);
+
+        var P = math.subtract(
+            W, 
+            math.multiply(
+                math.multiply(
+                    math.multiply(W, X),
+                    stXWX
+                ),
+                math.multiply(
+                    math.transpose(X),
+                    W
+                )
+            )
+        );
+        var RSS = math.multiply(
+            math.multiply(
+                math.transpose(Y), 
+                P
+            ), 
+            Y
+        );
+        RSS = RSS.toArray()[0][0];
+
+        // the 
+        var QE = math.max(0, RSS);
+        var df_Q = k - p;
+
+        var pval_Q = pchisq.compute(QE, df_Q, false);
+        var I2 = this.isquared(QE, df_Q)
+        
+        var trP = math.sum(math.diag(P));
+        var tau2 = (RSS - (k - p)) / trP;
+
+        // make sure that tau2 is >= tau2_min
+        // avoid neg val
+        var tau2_min = 0;
+        tau2 = math.max(tau2_min, tau2);
+
+        // se.tau2 <- sqrt(1/trP^2 * (2*(k-p) + 4*max(tau2,0)*trP + 2*max(tau2,0)^2*sum(P*P)))
+        var se_tau2 = math.sqrt(
+            1 / trP**2 * (
+                2 * (k - p) + 
+                4 * math.max(tau2, 0) * trP +
+                2 * math.max(tau2, 0) ** 2 * math.sum(math.multiply(P, P))
+            )
+        );
+
+        var heterogeneity = {
+            I2: I2.TE,
+            tau2: tau2,
+            pval_Q: pval_Q
+        };
+
+        return heterogeneity;
+    },
+
+    /**
+     * Heterogeneity estimation
+     * by the DerSimonian-Laird (DL) estimator
+     * 
+     * For more information:
+     * https://rdrr.io/cran/meta/src/R/hetcalc.R
+     */
+    __calc_heterogeneity_by_DL_with_TE_tau: function(TE, seTE, TE_tau) {
+
+        // Mantel-Haenszel estimator to calculate Q and tau (like RevMan 5)
+        // w.fixed <- 1 / seTE^2
+        // w.fixed[is.na(w.fixed)] <- 0
+        // 
+        // Q <- sum(w.fixed * (TE - TE.tau)^2, na.rm = TRUE)
+        // df.Q <- sum(!is.na(seTE)) - 1
+        // pval.Q <- pvalQ(Q, df.Q)
+        // 
+        // if (df.Q == 0)
+        // tau2 <- NA
+        // else if (round(Q, digits = 18) <= df.Q)
+        // tau2 <- 0
+        // else
+        // tau2 <- (Q - df.Q) / Ccalc(w.fixed)
+        
+        function Ccalc(x) {
+            return math.sum(x) - 
+            math.sum(math.dotPow(x, 2)) / math.sum(x)
+        }
+
+        var w_fixed = math.dotDivide(
+            1,
+            math.dotPow(
+                seTE,
+                2
+            )
+        );
+
+        // TE_tau is TE_fixed
+
+        // fill na to 0
+        w_fixed = this.fillna(w_fixed);
+
+        // get Q
+        var Q = math.sum(
+            math.dotMultiply(
+                w_fixed,
+                math.dotPow(
+                    math.subtract(TE, TE_tau),
+                    2
+                )
+            )
+        );
+
+        var df_Q = math.subtract(
+            math.sum(
+                math.not(
+                    math.isNaN(seTE)
+                )
+            ),
+            1
+        );
+
+        var pval_Q = pchisq.compute(Q, df_Q, false);
+
+        var tau2 = NaN;
+        if (df_Q == 0) {
+            tau2 = NaN;
+        } else if (Q <= df_Q) {
+            tau2 = 0;
+        } else {
+            tau2 = (Q - df_Q) / Ccalc(w_fixed)
+        }
+
+        var tau = math.sqrt(tau2);
+
+        var H = this.calcH(Q, df_Q);
+
+        var I2 = this.isquared(Q, df_Q);
+
+        return {
+            I2: I2.TE,
+            tau2: tau2,
+            pval_Q: pval_Q
+        }
+    },
+
+    fillna: function(x) {
+        if (typeof(x) == 'number') {
+            return math.isNaN(x)?0:x;
+        }
+        return x.map(v=>math.isNaN(v)?0:v);
     },
 
 }
