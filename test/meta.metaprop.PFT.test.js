@@ -8,7 +8,7 @@ import * as dfd from "danfojs-node";
 
 // locate the input stream
 let f = fs.createReadStream('./testsets/test_input.csv');
-let fo = fs.createReadStream('./testsets/test_result_OR.csv');
+let fo = fs.createReadStream('./testsets/test_result_PFT.csv');
 
 var rs1 = null;
 var rs2 = null;
@@ -49,7 +49,7 @@ function _tf2(v) {
 }
 
 function start_test() {
-describe('testing metajs metabin for OR functions', () => {
+describe('testing metajs metaprop for PFT functions', () => {
 
    // create a dataframe
    var df = new dfd.DataFrame(rs1.data);
@@ -72,9 +72,9 @@ describe('testing metajs metabin for OR functions', () => {
                      'TE.random', 'lower.random', 'upper.random']
         }).values[0];
 
-       it('case ' + ocn + ', fixed OR should be ' + _tf2(gtrs[0]) + '(' +_tf2(gtrs[1]) + ',' + _tf2(gtrs[2]) + ')', (done) => {
-            var rst = metajs.metabin(vals, {
-                sm: 'OR'
+       it('case ' + ocn + ', fixed PFT should be ' + _tf2(gtrs[0]) + '(' +_tf2(gtrs[1]) + ',' + _tf2(gtrs[2]) + ')', (done) => {
+            var rst = metajs.metaprop(vals, {
+                sm: 'PFT'
             });
 
             assert.deepEqual(
@@ -85,9 +85,9 @@ describe('testing metajs metabin for OR functions', () => {
             done();
         });
 
-        it('case ' + ocn + ', random OR should be ' + _tf2(gtrs[3]) + '(' +_tf2(gtrs[4]) + ',' + _tf2(gtrs[5]) + ')', (done) => {
-            var rst = metajs.metabin(vals, {
-                sm: 'OR'
+        it('case ' + ocn + ', random PFT should be ' + _tf2(gtrs[3]) + '(' +_tf2(gtrs[4]) + ',' + _tf2(gtrs[5]) + ')', (done) => {
+            var rst = metajs.metaprop(vals, {
+                sm: 'PFT'
             });
 
             assert.deepEqual(
