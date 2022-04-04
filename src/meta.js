@@ -1,6 +1,6 @@
 'use strict';
 
-import {create, all} from 'mathjs'
+import {create, all, random} from 'mathjs'
 const config = { }
 const math = create(all, config);
 
@@ -285,6 +285,10 @@ export const metajs = {
                 // it's not possible that event > n
                 continue;
 
+            } else if (r[0] == 0 && r[2] == 0) {
+                // both 0???
+                continue;
+
             } else if (r[0] == 0 || r[2] == 0) {
                 // zero event??? increase both
                 ds.incr_e.push( incr );
@@ -307,11 +311,16 @@ export const metajs = {
         }
         // double check the length of records
         if (ds.Et.length == 0) {
-            // what???
+            // what??? no qualified records???
+            return null;
+
         } else if (ds.Et.length == 1) {
             // what??? only one study?
+            // well, still workable
+
         } else {
             // ok, more than 1
+            // let's do math!
         }
 
         // for the calculation
@@ -511,45 +520,14 @@ export const metajs = {
             // w.random[is.na(w.random) | is.na(TE) | exclude] <- 0
             // TE.random <- weighted.mean(TE, w.random, na.rm = TRUE)
             // seTE.random <- sqrt(1/sum(w.random, na.rm = TRUE))
-            var w_random = math.dotDivide(
-                1,
-                math.add(
-                    math.sum(het.tau2),
-                    math.dotPow(seTE, 2)
-                )
-            );
-            w_random = this.fillna(w_random);
+            if (TE.length == 1) {
+                // for only one study, random is same 
+                random = JSON.parse(JSON.stringify(fixed));
 
-            var wp_random = math.dotDivide(
-                w_random,
-                math.sum(w_random)
-            );
-
-            var TE_random = math.sum(
-                math.dotMultiply(TE, wp_random)
-            );
-
-            var seTE_random = math.sqrt(
-                math.dotDivide(
-                    1,
-                    math.sum(w_random)
-                )
-            );
-
-            var SM_random = math.exp(TE_random);
-            var SM_random_lower = math.exp(TE_random - 1.96 * seTE_random);
-            var SM_random_upper = math.exp(TE_random + 1.96 * seTE_random);
-
-            random = {
-                TE: TE_random,
-                seTE: seTE_random,
-                w: w_random,
-                wp: wp_random,
-
-                SM: SM_random,
-                SM_lower: SM_random_lower,
-                SM_upper: SM_random_upper
-            };
+            } else {
+                // most cases
+                random = this.__calc_random(TE, seTE, het);
+            }
         }
 
         ///////////////////////////////////////////////////
@@ -576,6 +554,7 @@ export const metajs = {
 
         return ret;
     },
+
 
     __calc_fixed_OR_by_MH: function(ds) {
         var A = math.dotDivide(
@@ -674,6 +653,7 @@ export const metajs = {
 
         return fixed;
     },
+
 
     __calc_fixed_RR_by_MH: function(ds) {
         var D = math.dotDivide(
@@ -782,6 +762,51 @@ export const metajs = {
         return fixed;
     },
 
+
+    __calc_random: function(TE, seTE, het) {
+        var w_random = math.dotDivide(
+            1,
+            math.add(
+                math.sum(het.tau2),
+                math.dotPow(seTE, 2)
+            )
+        );
+        w_random = this.fillna(w_random);
+
+        var wp_random = math.dotDivide(
+            w_random,
+            math.sum(w_random)
+        );
+
+        var TE_random = math.sum(
+            math.dotMultiply(TE, wp_random)
+        );
+
+        var seTE_random = math.sqrt(
+            math.dotDivide(
+                1,
+                math.sum(w_random)
+            )
+        );
+
+        var SM_random = math.exp(TE_random);
+        var SM_random_lower = math.exp(TE_random - 1.96 * seTE_random);
+        var SM_random_upper = math.exp(TE_random + 1.96 * seTE_random);
+
+        var random = {
+            TE: TE_random,
+            seTE: seTE_random,
+            w: w_random,
+            wp: wp_random,
+
+            SM: SM_random,
+            SM_lower: SM_random_lower,
+            SM_upper: SM_random_upper
+        };
+
+        return random;
+    },
+
     /**
      * Heterogeneity estimation for standard model (rma.uni)
      * by the DerSimonian-Laird (DL) estimator
@@ -881,7 +906,16 @@ export const metajs = {
         // tau2 <- 0
         // else
         // tau2 <- (Q - df.Q) / Ccalc(w.fixed)
-        
+
+        if (TE.length == 1) {
+            // if this is only one study, no heter
+            return {
+                I2: NaN,
+                tau2: NaN,
+                pval_Q: NaN
+            }
+        }
+
         function Ccalc(x) {
             return math.sum(x) - 
             math.sum(math.dotPow(x, 2)) / math.sum(x)
@@ -931,9 +965,9 @@ export const metajs = {
             tau2 = (Q - df_Q) / Ccalc(w_fixed)
         }
 
-        var tau = math.sqrt(tau2);
+        // var tau = math.sqrt(tau2);
 
-        var H = this.calcH(Q, df_Q);
+        // var H = this.calcH(Q, df_Q);
 
         var I2 = this.isquared(Q, df_Q);
 
