@@ -22,18 +22,103 @@ export const metajs = {
         return x;
     },
 
+    asin2p: function(x, n, value) {
+        // the n is harmonic.mean 
+        // if (sm == "IRFT") {
+        //     if (is.metabind)
+        //         harmonic.mean < - x$t.harmonic.mean.ma
+        //     else
+        //         harmonic.mean < - 1 / mean(1 / x$time)
+        // } else {
+        //     if (is.metabind)
+        //         harmonic.mean < - x$n.harmonic.mean.ma
+        //     else
+        //         harmonic.mean < - 1 / mean(1 / x$n)
+        // }
+        // the `x$n` is the total of the event+total
+            
+        if (typeof(n) == 'undefined') {
+            n = null;
+        }
+        if (typeof(value) == 'undefined') {
+            value = 'mean';
+        }
+
+        var minimum = math.asin(0);
+        var maximum = math.asin(1);
+
+        if (n != null) {
+            minimum = 0.5 * (Math.asin(Math.sqrt(0 / (n + 1))) + Math.asin(Math.sqrt((0 + 1) / (n + 1))))
+            maximum = 0.5 * (Math.asin(Math.sqrt(n / (n + 1))) + Math.asin(Math.sqrt((n + 1) / (n + 1))))
+        }
+
+        if (n == null) {
+            return math.dotPow(
+                math.sin(x),
+                2
+            );
+        } else {
+            // 0.5 * (1 - sign(cos(2 * x[sel])) *
+            //            sqrt(1 - ( sin(2 * x[sel]) +
+            //                         ( sin(2 * x[sel]) - 1 / sin(2 * x[sel])) / n[sel]
+            //                             
+            //                     )^2
+            //            )
+            //       )
+            return math.dotMultiply(
+                0.5,
+                math.subtract(
+                    1,
+                    math.dotMultiply(
+                        math.sign(math.cos(math.dotMultiply(2, x))),
+                        math.sqrt(
+                            math.subtract(
+                                1,
+                                math.dotPow(
+                                    math.add(
+                                        math.sin(math.dotMultiply(2, x)),
+                                        math.dotDivide(
+                                            math.subtract(
+                                                math.sin(math.dotMultiply(2, x)),
+                                                math.dotDivide(
+                                                    1,
+                                                    math.sin(math.dotMultiply(2, x))
+                                                )
+                                            ),
+                                            n
+                                        )
+                                    ),
+                                    2
+                                )
+                            )
+                        )
+                    )
+                )
+            )
+        }
+    },
+
     expit: function(v) {
         return math.add(
-            math.multiply(
+            math.dotMultiply(
                 0.5,
                 math.tanh(
-                    math.multiply(
-                        v,
-                        0.5
+                    math.dotMultiply(
+                        0.5,
+                        v
                     )
                 )
             ),
             0.5
+        );
+    },
+
+    harmonic_mean: function(n) {
+        return math.dotDivide(
+            1,
+            math.mean(
+                math.dotDivide(1, n)
+            )
         );
     },
     
@@ -172,6 +257,414 @@ export const metajs = {
             upper: this.tfxd6(upper),
             statistic: statistic
         };
+    },
+
+    /**
+     * Meta-analysis of single proportions
+     * 
+     * The input `rs` is a list that contains the records.
+     * 
+     * [
+     *     [event, n],
+     *     ...
+     * ]
+     * 
+     * Each records contains two values:
+     *     - event: the number of events
+     *     - n: the number of observations
+     * 
+     * For more information, check the R code
+     * https://rdrr.io/cran/meta/src/R/metaprop.R
+     */
+    metaprop: function(rs, params) {
+        
+        ///////////////////////////////////////////////////
+        // (1) Check and set arguments
+        ///////////////////////////////////////////////////
+        // Yes, you can use default settings
+        if (typeof(params)=='undefined') {
+            params = {};
+        }
+
+        if (!params.hasOwnProperty('input_format')) {
+            params['input_format'] = 'PRIM_CAT_RAW';
+        }
+
+        if (!params.hasOwnProperty('sm')) {
+            params['sm'] = 'PLOGIT';
+        }
+
+        var incr = 0.5;
+        if (!params.hasOwnProperty('incr')) {
+            params['incr'] = incr;
+        } else {
+            // check float
+            incr = params['incr'];
+        }
+
+        if (!params.hasOwnProperty('incr_event')) {
+            params['incr_event'] = params['incr'];
+        }
+
+        if (!params.hasOwnProperty('method')) {
+            params['method'] = 'Inverse';
+        }
+
+        if (!params.hasOwnProperty('method_ci')) {
+            params['method_ci'] = 'CP';
+        }
+
+        if (!params.hasOwnProperty('method_tau')) {
+            params['method.tau'] = 'DL';
+        }
+
+        ///////////////////////////////////////////////////
+        // (2) Read data
+        ///////////////////////////////////////////////////
+
+
+        ///////////////////////////////////////////////////
+        // (3) Check length of variables
+        ///////////////////////////////////////////////////
+
+
+        ///////////////////////////////////////////////////
+        // (4) Subset, exclude studies, and subgroup
+        ///////////////////////////////////////////////////
+
+
+        ///////////////////////////////////////////////////
+        // (5) Store dataset
+        ///////////////////////////////////////////////////
+        var ds = {
+            e: [],
+            n: [],
+            incr_e: []
+        };
+        // a mapping from ds index to rs index
+        var d2r = {};
+        for (let i = 0; i < rs.length; i++) {
+            const r = rs[i];
+            // check the r
+            if (r[0] > r[1]) {
+                // it's not possible that event > n
+                continue;
+
+            } else if (r[0] == 0) {
+                // zero event??? increase both
+                ds.incr_e.push( incr );
+
+            } else {
+                // for most case
+                ds.incr_e.push( 0 );
+            }
+
+            // then save both
+            ds.e.push( r[0] );
+            ds.n.push( r[1] );
+
+            // add this mapping
+            d2r[ds.e.length - 1] = i;
+        }
+
+        // double check the length of records
+        if (ds.e.length == 0) {
+            // what??? nothing to do with 0 studies
+            return null;
+
+        } else if (ds.e.length == 1) {
+            // what??? only one study?
+            // ok ...
+        } else {
+            // ok, more than 1
+        }
+
+        // add harmonic_mean to ds
+        ds.harmonic_mean = this.harmonic_mean(ds.n);
+
+        ///////////////////////////////////////////////////
+        // (6) Subset analysis
+        ///////////////////////////////////////////////////
+
+
+        ///////////////////////////////////////////////////
+        // (7) Calculate results for each study
+        ///////////////////////////////////////////////////
+        var TE = null;
+        var seTE = null;
+
+        if (params.sm == 'PLOGIT') {
+            // TE <- log((event + incr.event) / (n - event + incr.event))
+            // seTE <- sqrt(1 / (event + incr.event) +
+            //             1 / ((n - event + incr.event)))
+            TE = math.log(
+                math.dotDivide(
+                    math.add(ds.e, ds.incr_e),
+                    math.add(
+                        math.subtract(ds.n, ds.e),
+                        ds.incr_e
+                    )
+                )
+            );
+
+            seTE = math.sqrt(
+                math.add(
+                    math.dotDivide(
+                        1, 
+                        math.add(ds.e, ds.incr_e)
+                    ),
+                    math.dotDivide(
+                        1,
+                        math.add(
+                            math.subtract(ds.n, ds.e),
+                            ds.incr_e
+                        )
+                    )
+                )
+            );
+
+        } else if (params.sm == 'PFT') {
+            // TE <- 0.5 * (asin(sqrt(event / (n + 1))) + asin(sqrt((event + 1) / (n + 1))))
+            // seTE <- sqrt(1 / (4 * n + 2))
+            // transf.null.effect <- asin(sqrt(null.effect))
+            TE = math.dotMultiply(
+                0.5,
+                math.add(
+                    math.asin(math.sqrt(
+                        math.dotDivide(
+                            ds.e, 
+                            math.add(ds.n, 1)
+                    ))),
+                    math.asin(math.sqrt(
+                        math.dotDivide(
+                            math.add(ds.e, 1), 
+                            math.add(ds.n, 1)
+                    )))
+                )
+            );
+            seTE = math.sqrt(
+                math.dotDivide(
+                    1,
+                    math.add(
+                        2,
+                        math.dotMultiply(
+                            4,
+                            ds.n
+                        )
+                    )
+                )
+            );
+
+        } else if (params.sm == 'PAS') {
+            // TE <- asin(sqrt(event / n))
+            // seTE <- sqrt(1 / (4 * n))
+            // transf.null.effect <- asin(sqrt(null.effect))
+
+            TE = math.asin(math.sqrt(
+                math.dotDivide(
+                    ds.e, ds.n
+                )
+            ));
+
+            seTE = math.sqrt(
+                math.dotDivide(
+                    1,
+                    math.dotMultiply(4, ds.n)
+                )
+            );
+
+        } else if (params.sm == 'PLN') {
+            // TE <- log((event + incr.event) / (n + incr.event))
+            //  Hartung, Knapp (2001), p. 3880, formula (18):
+            // seTE <- ifelse(event == n,
+            //             sqrt(1 / event                - 1 / (n + incr.event)),
+            //             sqrt(1 / (event + incr.event) - 1 / (n + incr.event))
+            //             )
+            TE = math.log(
+                math.dotDivide(
+                    math.add(ds.e, ds.incr_e),
+                    math.add(ds.n, ds.incr_e)
+                )
+            );
+
+            if (math.deepEqual(ds.e, ds.n)) {
+                // event == total??
+                seTE = math.sqrt(
+                    math.subtract(
+                        math.dotDivide(1, ds.e),
+                        math.dotDivide(
+                            1,
+                            math.add(ds.n, ds.incr_e)
+                        )
+                    )
+                );
+            } else {
+                seTE = math.sqrt(
+                    math.subtract(
+                        math.dotDivide(
+                            1, 
+                            math.add(ds.e, ds.incr_e)
+                        ),
+                        math.dotDivide(
+                            1,
+                            math.add(ds.n, ds.incr_e)
+                        )
+                    )
+                )
+            }
+        }
+
+        var SM = [];
+        var SM_lower = [];
+        var SM_upper = [];
+
+        // var SM_RS = ds.e.tolist().map((e,i)=>binom.test(e, ds.n.get(i)));
+        for (let i = 0; i < ds.e.length; i++) {
+            var _e = ds.e[i];
+            var _incr_e = ds.incr_e[i];
+            var _n = ds.n[i];
+            var r = binom.test(_e + _incr_e, _n);
+
+            SM.push(r.estimate);
+            SM_lower.push(r.lower);
+            SM_upper.push(r.upper);
+        }
+
+        // var _TE = Array(rs.length).fill(null);
+        // var _seTE = Array(rs.length).fill(null);
+
+        ///////////////////////////////////////////////////
+        // (8) Do meta-analysis
+        ///////////////////////////////////////////////////
+        var fixed = null;
+        var random = null;
+
+        ///////////////////////////////
+        // Fixed effect model
+        ///////////////////////////////
+        // var w_fixed = ONE.divide(seTE.pow(2));
+        // var wp_fixed = w_fixed.divide(w_fixed.sum());
+        var w_fixed = math.dotDivide(
+            1, 
+            math.dotPow(seTE, 2)
+        );
+        var wp_fixed = math.dotDivide(
+            w_fixed,
+            math.sum(w_fixed)
+        );
+
+        // var TE_fixed = TE.multiply(wp_fixed).sum();
+        // var seTE_fixed = math.sqrt( 1 / w_fixed.sum());
+        var TE_fixed = math.sum(
+            math.dotMultiply(
+                TE,
+                wp_fixed
+            )
+        );
+        var seTE_fixed = math.sqrt(
+            math.divide(
+                1,
+                math.sum(w_fixed)
+            )
+        );
+        var TE_fixed_lower = math.add(
+            TE_fixed,
+            math.dotMultiply(
+                -1.96,
+                seTE_fixed
+            )
+        );
+        var TE_fixed_upper = math.add(
+            TE_fixed,
+            math.dotMultiply(
+                1.96,
+                seTE_fixed
+            )
+        );
+        
+        // var SM_fixed = this.expit(TE_fixed);
+        // var SM_fixed_lower = this.expit();
+        // var SM_fixed_upper = this.expit(TE_fixed + 1.96 * seTE_fixed);
+        var SM_fixed = null;
+        var SM_fixed_lower = null;
+        var SM_fixed_upper = null;
+
+        if (params.sm == 'PLOGIT') {
+            SM_fixed = this.expit(TE_fixed);
+            SM_fixed_lower = this.expit(TE_fixed_lower);
+            SM_fixed_upper = this.expit(TE_fixed_upper);
+
+        } else if (params.sm == 'PFT') {
+            SM_fixed = this.asin2p(TE_fixed, ds.harmonic_mean);
+            SM_fixed_lower = this.asin2p(TE_fixed_lower, ds.harmonic_mean);
+            SM_fixed_upper = this.asin2p(TE_fixed_upper, ds.harmonic_mean);
+        }
+
+        fixed = {
+            TE: TE_fixed,
+            seTE: seTE_fixed,
+            TE_lower: TE_fixed_lower,
+            TE_upper: TE_fixed_upper,
+            w: w_fixed,
+            wp: wp_fixed,
+
+            SM: SM_fixed,
+            SM_lower: SM_fixed_lower,
+            SM_upper: SM_fixed_upper
+        }
+
+        ///////////////////////////////
+        // Heteroginity
+        ///////////////////////////////
+        var het = null;
+        // het = this.__calc_heterogeneity_by_DL_with_TE_tau(TE, seTE, fixed.TE);
+        het = this.__calc_heterogeneity_by_DL_rma_uni(TE, seTE);
+
+        ///////////////////////////////
+        // Random effect model
+        ///////////////////////////////
+
+        // TODO
+        // random = null;
+        if (params.sm == 'PLOGIT') {
+            random = this.__calc_random(TE, seTE, het);
+
+            // backtransf
+            random.SM = this.expit(random.TE);
+            random.SM_lower = this.expit(random.TE_lower);
+            random.SM_upper = this.expit(random.TE_upper);
+
+        } else if (params.sm == 'PFT') {
+            random = this.__calc_random(TE, seTE, het);
+
+            // backtransf
+            random.SM = this.asin2p(random.TE, ds.harmonic_mean);
+            random.SM_lower = this.asin2p(random.TE_lower, ds.harmonic_mean);
+            random.SM_upper = this.asin2p(random.TE_upper, ds.harmonic_mean);
+        }
+
+        ///////////////////////////////////////////////////
+        // (9) Finalize return object
+        ///////////////////////////////////////////////////
+        var ret = {
+            ds: ds,
+            heterogeneity: het,
+
+            TE: TE,
+            seTE: seTE,
+            SM: SM,
+            SM_lower: SM_lower,
+            SM_upper: SM_upper,
+
+            // the MA result
+            fixed: fixed,
+            random: random,
+
+            // the settings
+            params: params
+        }
+
+        return ret;
     },
 
     /**
@@ -527,6 +1020,11 @@ export const metajs = {
             } else {
                 // most cases
                 random = this.__calc_random(TE, seTE, het);
+
+                // backtransf
+                random.SM = math.exp(random.TE);
+                random.SM_lower = math.exp(random.TE_lower);
+                random.SM_upper = math.exp(random.TE_upper);
             }
         }
 
@@ -789,19 +1287,32 @@ export const metajs = {
             )
         );
 
-        var SM_random = math.exp(TE_random);
-        var SM_random_lower = math.exp(TE_random - 1.96 * seTE_random);
-        var SM_random_upper = math.exp(TE_random + 1.96 * seTE_random);
+        var TE_random_lower = math.add(
+            TE_random,
+            math.dotMultiply(
+                -1.96,
+                seTE_random
+            )
+        );
+        var TE_random_upper = math.add(
+            TE_random,
+            math.dotMultiply(
+                1.96,
+                seTE_random
+            )
+        );
 
         var random = {
             TE: TE_random,
             seTE: seTE_random,
+            TE_lower: TE_random_lower,
+            TE_upper: TE_random_upper,
             w: w_random,
             wp: wp_random,
 
-            SM: SM_random,
-            SM_lower: SM_random_lower,
-            SM_upper: SM_random_upper
+            SM: null,
+            SM_lower: null,
+            SM_upper: null
         };
 
         return random;
@@ -816,7 +1327,14 @@ export const metajs = {
      * and 
      * https://rdrr.io/cran/metafor/src/R/rma.uni.r
      */
-    __calc_heterogeneity_by_DL: function(TE, seTE) {
+    __calc_heterogeneity_by_DL_rma_uni: function(TE, seTE) {
+        // wi <- 1/vi
+        // W <- diag(wi, nrow = k, ncol = k)
+        // stXWX <- .invcalc(X = X, W = W, k = k)
+        // P <- W - W %*% X %*% stXWX %*% crossprod(X, W)
+        // RSS <- crossprod(Y, P) %*% Y
+        // trP <- .tr(P)
+        // tau2 <- ifelse(tau2.fix, tau2.val, (RSS - (k - p))/trP)
         var k = TE.length;
         var p = 1;
 
@@ -873,6 +1391,9 @@ export const metajs = {
                 2 * math.max(tau2, 0) ** 2 * math.sum(math.multiply(P, P))
             )
         );
+
+        // not sure about this:
+        // I2 <- 100 * mean(tau2)/(vt + mean(tau2))
 
         var heterogeneity = {
             I2: I2.TE,
@@ -1162,3 +1683,106 @@ export const pchisq = {
         return p;
     }
 }
+
+export const binom = {
+    // This implementation comes from:
+    // http://home.ubalt.edu/ntsbarsh/business-stat/otherapplets/ConfIntPro.htm
+    test: function (m, n, level) {
+        if (typeof(level)=='undefined') {
+            level = 0.95;
+        }
+
+        var P1 = Math.round((m / n) * 100000) / 100000;
+        var P = m / n;
+        var nu1 = 2 * (n - m + 1);
+        var nu2 = 2 * m;
+        var AL = (1 - level) / 2;
+        var F1 = this.AFishF(AL, nu1, nu2);
+        var NUM1 = m;
+        var DEN1 = (n - m + 1) * F1 + m;
+        var LL1 = (NUM1 / DEN1);
+        var nup1 = nu2 + 2;
+        var nup2 = nu1 - 2;
+        var F2 = this.AFishF(AL, nup1, nup2)
+        var NUM2 = (m + 1) * F2;
+        var DEN2 = (n - m) + (m + 1) * F2;
+        var UL1 = (NUM2 / DEN2);
+
+        var lower = Math.round(100000 * LL1) / 100000;
+        var upper = Math.round(100000 * UL1) / 100000;
+
+        return {
+            estimate: P1,
+            lower: lower,
+            upper: upper
+        };
+
+    },
+
+    FishF: function (f, n1, n2) {
+        var Pi = Math.PI;
+        var PiD2 = Pi / 2;
+        var PiD4 = Pi / 4;
+        var Pi2 = 2 * Pi;
+        var e = 2.718281828459045235;
+        var e10 = 1.105170918075647625;
+        var Deg = 180 / Pi;
+        var x = n2 / (n1 * f + n2);
+        if ((n1 % 2) == 0) { 
+            return this.StatCom(1 - x, n2, n1 + n2 - 4, n2 - 2) * Math.pow(x, n2 / 2);
+        }
+        if ((n2 % 2) == 0) { 
+            return 1 - this.StatCom(x, n1, n1 + n2 - 4, n1 - 2) * Math.pow(1 - x, n1 / 2);
+        }
+        var th = Math.atan(Math.sqrt(n1 * f / n2)); 
+        var a = th / PiD2; var sth = Math.sin(th);
+        var cth = Math.cos(th);
+        if (n2 > 1) { 
+            a = a + sth * cth * this.StatCom(cth * cth, 2, n2 - 3, -1) / PiD2;
+        }
+        if (n1 == 1) { 
+            return 1 - a;
+        }
+        var c = 4 * this.StatCom(sth * sth, n2 + 1, n1 + n2 - 4, n2 - 2) * sth * Math.pow(cth, n2) / Pi;
+        if (n2 == 1) { 
+            return 1 - a + c / 2; 
+        }
+        var k = 2; 
+        while (k <= (n2 - 1) / 2) {
+            c = c * k / (k - .5); 
+            k = k + 1;
+        }
+
+        return 1 - a + c;
+    },
+
+    StatCom: function (q, i, j, b) {
+        var zz = 1; 
+        var z = 1; 
+        var k = i; 
+        while (k <= j) { 
+            zz = zz * q * k / (k - b); 
+            z = z + zz; 
+            k = k + 2; 
+        }
+        return z;
+    },
+
+    AFishF: function (p, n1, n2) {
+        var v = 0.5; 
+        var dv = 0.5; 
+        var f = 0;
+
+        while (dv > 1e-10) { 
+            f = 1 / v - 1; 
+            dv = dv / 2; 
+
+            if (this.FishF(f, n1, n2) > p) { 
+                v = v - dv;
+            } else { 
+                v = v + dv;
+            } 
+        }
+        return f;
+    }
+};

@@ -16,13 +16,28 @@ var metajs = {
             value = 'mean';
         }
 
-        var minimum = Math.asin(0);
-        var maximum = Math.asin(1);
+        // var minimum = Math.asin(0);
+        // var maximum = Math.asin(1);
 
-        if (n != null) {
-            minimum = 0.5 * (Math.asin(Math.sqrt(0 / (n + 1))) + Math.asin(Math.sqrt((0 + 1) / (n + 1))))
-            maximum = 0.5 * (Math.asin(Math.sqrt(n / (n + 1))) + Math.asin(Math.sqrt((n + 1) / (n + 1))))
-        }
+        // if (n != null) {
+        //     minimum = 0.5 * (Math.asin(Math.sqrt(0 / (n + 1))) + Math.asin(Math.sqrt((0 + 1) / (n + 1))))
+        //     maximum = 0.5 * (Math.asin(Math.sqrt(n / (n + 1))) + Math.asin(Math.sqrt((n + 1) / (n + 1))))
+        // }
+
+        var ret = null;
+
+        // res[sel] <- sin(x[sel])^2
+        // return math.dotPow(
+        //     math.sin(x),
+        //     2
+        // );
+
+        // Back transformation of Freeman-Tukey double arcsine transformation:
+        // res[sel] <- 0.5 * (1 - sign(cos(2 * x[sel])) *
+        //                 sqrt(1 - (sin(2 * x[sel]) +
+        //                             (sin(2 * x[sel]) -
+        //                             1 / sin(2 * x[sel])) / n[sel])^2))
+        return ret;
     },
 
     /**

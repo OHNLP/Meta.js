@@ -38,6 +38,57 @@ describe('testing metajs base functions', () => {
 });
 
 
+describe('testing metajs.metaprop functions', () => {
+    it('simple case, fixed incd by Inverse should be 0.15', () => {
+        var d = {
+            rs: [
+                [2, 20,  'S1'],
+                [5, 90,  'S2'],
+                [20,100, 'S3'],
+            ],
+            vs: {
+                fixed: ['0.15', '0.10', '0.21'],
+                random: ['0.11', '0.04', '0.26']
+            }
+        }
+
+        var vals = metajs.metaprop(d.rs, { sm: 'PLOGIT' });
+        assert.deepEqual(
+            [
+                vals.fixed.SM.toFixed(2), 
+                vals.fixed.SM_lower.toFixed(2), 
+                vals.fixed.SM_upper.toFixed(2)
+            ],
+            d.vs.fixed
+        );
+    });
+
+    it('simple case, random incd by Inverse should be 0.11', () => {
+        var d = {
+            rs: [
+                [2, 20,  'S1'],
+                [5, 90,  'S2'],
+                [20,100, 'S3'],
+            ],
+            vs: {
+                fixed: ['0.15', '0.10', '0.21'],
+                random: ['0.11', '0.04', '0.26']
+            }
+        }
+
+        var vals = metajs.metaprop(d.rs, { sm: 'PLOGIT' });
+        assert.deepEqual(
+            [
+                vals.random.SM.toFixed(2), 
+                vals.random.SM_lower.toFixed(2), 
+                vals.random.SM_upper.toFixed(2)
+            ],
+            d.vs.random
+        );
+    })
+});
+
+
 describe('testing metajs.metabin functions', () => {
     it('simple case, fixed OR by MH should be 1.697488', () => {
         var d = {
@@ -46,26 +97,18 @@ describe('testing metajs.metabin functions', () => {
                 [24,230,24,281, 'S2', 'T','C'],
             ],
             vs: {
-                fixed: {
-                    SM: 1.697488,
-                    SM_lower: 0.999475,
-                    SM_upper: 2.882978
-                }
+                fixed: ['1.697', '0.999', '2.883']
             }
         };
 
         var vals = metajs.metabin(d.rs);
-        assert.equal(
-            metajs.tfxd6(vals.fixed.SM),
-            d.vs.fixed.SM
-        );
-        assert.equal(
-            metajs.tfxd6(vals.fixed.SM_lower),
-            d.vs.fixed.SM_lower
-        );
-        assert.equal(
-            metajs.tfxd6(vals.fixed.SM_upper),
-            d.vs.fixed.SM_upper
+        assert.deepEqual(
+            [
+                vals.fixed.SM.toFixed(3), 
+                vals.fixed.SM_lower.toFixed(3), 
+                vals.fixed.SM_upper.toFixed(3)
+            ],
+            d.vs.fixed
         );
     });
 
