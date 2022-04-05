@@ -782,6 +782,10 @@ export const metajs = {
                 // both 0???
                 continue;
 
+            } else if (params.sm == 'OR' && r[0] == r[1] && r[2] == r[3]) {
+                // both all events???
+                continue;
+
             } else if (r[0] == 0 || r[2] == 0) {
                 // zero event??? increase both
                 ds.incr_e.push( incr );

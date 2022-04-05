@@ -4,8 +4,8 @@ import { metajs } from './src/meta.js';
 
 function test_metabin() {
     var rs = [
-        [0,393,0,396, 'S1', 'T','C'],
-        // [24,230,24,281, 'S2', 'T','C'],
+        [12,393,2,396, 'S1', 'T','C'],
+        [24,230,24,281, 'S2', 'T','C'],
     ]
     
     var rst = metajs.metabin(
@@ -35,4 +35,5 @@ function test_metaprop() {
     console.log(rst);
 }
 
-test_metaprop();
+test_metabin()
+// test_metaprop();

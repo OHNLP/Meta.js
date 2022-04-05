@@ -12,6 +12,7 @@ html,body {
     width: 100%;
     height: 100%;
     font-size: 14px;
+    overflow-x: hidden;
 }
 p {
     margin: 0.5em 0;
@@ -105,12 +106,17 @@ p {
             <div class="mb-1">
                 <p>A sample outcome with binary data</p>
                 <textarea id="sample_txt" 
-                    cols="40" 
+                    cols="50" 
                     rows="11" 
                     v-model="sample_txt"></textarea>
                 <br>
                 <button v-on:click="run_sample">
                     Run PMA
+                </button>
+                |
+
+                <button v-on:click="make_sample">
+                    Make random sample
                 </button>
             </div>
 
@@ -205,7 +211,7 @@ p {
             <table v-for="r in results" 
                 class="mb-1 tb-result">
                 <tr>
-                    <th>Study</th>
+                    <th>Study ({{r.oc.length }} studies)</th>
                     <th>Et</th>
                     <th>Nt</th>
                     <th>Ec</th>
@@ -335,7 +341,7 @@ var app_test = {
                 n_ocs: null,
 
                 // sample
-                sample_txt: 'study,Et,Nt,Ec,Nc,treatment,control\nARCHES24,139,572,147,574,Doublet,Placebo\nENZAMET7,321,563,241,558,Doublet,Placebo\nLATITUDE,411,597,309,602,Doublet,Placebo\nSTAMPEDE,288,592,399,1184,Doublet,Placebo\nCHKMT154,155,422,287,1072,Doublet,Placebo\nTXNMRX23,223,531,280,588,Doublet,Placebo\nQWERTXBN,198,401,220,420,Doublet,Placebo\nTUXSWX09,252,531,314,707,Doublet,Placebo\nPROTE002,353,662,505,888,Doublet,Placebo\nATLASTX2,364,703,236,629,Doublet,Placebo',
+                sample_txt: '"study","Et","Nt","Ec","Nc","treatment","control"\n"ARCHES24",139,572,147,574,"Treat","Placebo"\n"ENZAMET7",321,563,241,558,"Treat","Placebo"\n"LATITUDE",411,597,309,602,"Treat","Placebo"\n"STAMPEDE",288,592,399,1184,"Treat","Placebo"\n"CHKMT154",155,422,287,1072,"Treat","Placebo"\n"TXNMRX23",223,531,280,588,"Treat","Placebo"\n"QWERTXBN",198,401,220,420,"Treat","Placebo"\n"TUXSWX09",252,531,314,707,"Treat","Placebo"\n"PROTE002",353,662,505,888,"Treat","Placebo"\n"ATLASTX2",364,703,236,629,"Treat","Placebo"',
 
                 // the log of tests
                 log: [],
@@ -387,6 +393,29 @@ var app_test = {
                             app_test.vpp.$data.dur = ret.dur;
                         }
                     })
+                },
+
+                make_sample: function() {
+                    var sample = [
+                        'study,Et,Nt,Ec,Nc,treatment,control'
+                    ];
+
+                    var n = math.randomInt(2, 40);
+
+                    for (let i = 0; i < n; i++) {
+                        var et = math.randomInt(0, 100);
+                        var nt = math.randomInt(1, 100) + et;
+                        var ec = math.randomInt(0, 100);
+                        var nc = math.randomInt(1, 100) + ec;
+                        var study = math.random().toString(36).slice(7).toLocaleUpperCase();
+                        sample.push(
+                            [study, et, nt, ec, nc, 'Treat', 'Placebo'].map(v=>''+v).join(',')
+                        );
+                    }
+
+                    sample = sample.join('\n');
+
+                    this.sample_txt = sample;
                 },
 
                 demo: function(n) {
