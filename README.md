@@ -40,3 +40,7 @@ The preliminary results are as follows:
 </table>
 
 The median time of the JavaScript version is 1.12s while the R version is 17.94s for 1000 outcomes. As the number of outcomes increases, the absolute differences in time also increase.
+
+# License
+
+Apache-2.0 License
