@@ -1,9 +1,5 @@
 'use strict';
 
-import {create, all, random} from 'mathjs'
-const config = { }
-const math = create(all, config);
-
 export const metajs = {
 
     tfxd6: function(x) {

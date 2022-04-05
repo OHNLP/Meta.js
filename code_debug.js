@@ -1,5 +1,9 @@
 'use strict';
 
+import {create, all, random} from 'mathjs'
+const config = { }
+const math = create(all, config);
+
 import { metajs } from './src/meta.js';
 import Papa from 'papaparse';
 import fs from 'fs';
