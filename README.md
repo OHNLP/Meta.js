@@ -45,3 +45,8 @@ The median time of the JavaScript version is 1.12s while the R version is 17.94s
 # License
 
 Apache-2.0 License
+
+# Development
+
+`Meta.js` leverages Node.js and [Mocha](https://mochajs.org/) to conduct unittests to ensure the correctness of calculation. 
+You can run `npm test` to check the test results.
