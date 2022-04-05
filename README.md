@@ -22,6 +22,7 @@ To validate the correctness and evaluate the performance of Meta.js, the followi
 1. `make_sample.py`: this Python script can make test dataset of binary outcomes for test purpose.
 2. `pwma.R`: this R script provides the performance test.
 3. `sample.csv`: the sample data file for test, which contains 10,000 outcomes, and each outcome contains random number of studies (1-100)
+4. `gen_test_output.r`: this R script provides the ground truth for testing.
 
 To evaluate the performance of Meta.js, we conducted two experiments, 1) calculation of the fixed effects on randomly selected 1,000 outcomes for 50 times, and 2) calculation of the fixed effects of different number of outcomes. In both R and JavaScript versions, the test dataset is pre-loaded, and the calculation time is recorded.
 
