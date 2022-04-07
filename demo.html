@@ -7,9 +7,237 @@
 <link rel="shortcut icon" href="./favicon.ico">
 <title>Meta.js Demo</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
+<style>
+html,body {
+    width: 100%;
+    height: 100%;
+    font-size: 14px;
+    overflow-x: hidden;
+}
+p {
+    margin: 0.5em 0;
+}
+.mb-1 {
+    margin-bottom: 1em;
+}
+.tb-result {
+    padding: 2px 0;
+}
+.tb-result th {
+    border-top: 2px solid #cccccc;
+    border-bottom: 2px solid #cccccc;
+    padding: 0px 5px;
+}
+.tb-result td {
+    border-bottom: 1px solid #efefef;
+    border-right: 1px solid #efefef;
+    text-align: center;
+    padding: 0px 5px;
+}
+.param-list {
+    padding: 1px;
+}
+.param-key {
+    padding: 1px 5px;
+    background: #dfdfdf;
+    border-bottom: 1px solid #dfdfdf;
+    text-align: center;
+}
+.param-val {
+    padding: 1px 3px;
+    border-bottom: 1px solid #dfdfdf;
+    text-align: center;
+    font-style: italic;
+}
+#pan_results {
+    max-height: 100%;
+}
+</style>
 </head>
 <body>
-    
+<p>
+    <b>
+        Meta.js Demonstration
+    </b> |
+    More information: 
+    <a target="_blank" href="https://github.com/OHNLP/Meta.js">
+        <i class="fab fa-github"></i>
+        GitHub
+    </a>
+</p>
+<div id="app_test"
+    style="display: flex; flex-direction: row;">
+
+    <fieldset>
+        <legend>DATA</legend>
+
+        <div>
+
+            <div class="mb-1">
+                <p>A sample outcome with binary data</p>
+                <textarea id="sample_txt" 
+                    cols="50" 
+                    rows="11" 
+                    v-model="sample_txt"></textarea>
+                <br>
+                <button v-on:click="run_sample">
+                    Run PMA
+                </button>
+                |
+
+                <button v-on:click="make_sample">
+                    Make random sample
+                </button>
+            </div>
+
+        </div>
+    </fieldset>
+
+    <fieldset id="pan_results">
+        <legend>RESULTS</legend>
+        <p v-if="dur == null">
+        </p>
+        <p v-else>
+            It takes <b>{{ tf4(dur) }}</b> seconds to calculate {{ results.length }} outcomes
+        </p>
+        <div v-if="results.length > 0"
+            style="display: flex; flex-direction: column; flex-wrap: wrap;">
+            <p>
+                Settings:
+            </p>
+            <div class="mb-1"
+                style="display: flex; flex-direction: row; flex-wrap: wrap;">
+                <div v-for="val, key in results[0].res.params"
+                    class="param-list">
+                    <div class="param-key">
+                        {{ key }}
+                    </div>
+                    <div class="param-val">
+                        {{ val }}
+                    </div>
+                </div>
+            </div>
+            <p>
+                Results:
+            </p>
+            <table v-for="r in results" 
+                class="mb-1 tb-result">
+                <tr>
+                    <th>Study <br>({{r.oc.length }} studies)</th>
+                    <th>Et</th>
+                    <th>Nt</th>
+                    <th>Ec</th>
+                    <th>Nc</th>
+                    <th>Treatment</th>
+                    <th>Control</th>
+                    <th>Odds Ratio</th>
+                    <th>Lower, Upper</th>
+                    <th>Weight<br>(Fixed)</th>
+                    <th>Weight<br>(Random)</th>
+                </tr>
+                <tr v-for="stu, stu_idx in r.oc">
+                    <td>{{ stu[4] }}</td>
+                    <td>{{ stu[0] }}</td>
+                    <td>{{ stu[1] }}</td>
+                    <td>{{ stu[2] }}</td>
+                    <td>{{ stu[3] }}</td>
+                    <td>{{ stu[5] }}</td>
+                    <td>{{ stu[6] }}</td>
+
+                    <td>{{ tf2(r.res.SM[stu_idx]) }}</td>
+                    <td>
+                        {{ tf2(r.res.SM_lower[stu_idx]) }}, 
+                        {{ tf2(r.res.SM_upper[stu_idx]) }}
+                    </td>
+                    <td>
+                        {{ tf2(r.res.fixed.wp[stu_idx] * 100) }}%
+                    </td>
+                    <td>
+                        {{ tf2(r.res.random.wp[stu_idx] * 100) }}%
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="7">
+                        <b>Fixed Effect Model</b>
+                    </td>
+                    <td>
+                        {{ tf2(r.res.fixed.SM) }}
+                    </td>
+                    <td>
+                        (
+                            {{ tf2(r.res.fixed.SM_lower) }}, 
+                            {{ tf2(r.res.fixed.SM_upper) }}
+                        )
+                    </td>
+                    <td>
+                        100%
+                    </td>
+                    <td>
+                        &nbsp;
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="7">
+                        <b>Random Effect Model</b>
+                    </td>
+                    <td>
+                        {{ tf2(r.res.random.SM) }}
+                    </td>
+                    <td>
+                        (
+                            {{ tf2(r.res.random.SM_lower) }}, 
+                            {{ tf2(r.res.random.SM_upper) }}
+                        )
+                    </td>
+                    <td>
+                        &nbsp;
+                    </td>
+                    <td>
+                        100%
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="7">
+                        Heterogeneity:
+                    </td>
+                    <td>
+                        I<sup>2</sup>={{ tf2(r.res.heterogeneity.I2*100) }}%
+                    </td>
+                    <td>
+                        Tau<sup>2</sup>={{ tf4(r.res.heterogeneity.tau2) }}
+                    </td>
+                    <td>
+                        <span v-if="r.res.heterogeneity.pval_Q < 0.01">
+                            <i>p</i> &lt; 0.01
+                        </span>
+                        <span v-else>
+                            <i>p</i>={{ tf2(r.res.heterogeneity.pval_Q) }} 
+                        </span>
+                    </td>
+                    <td>
+                        &nbsp;
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <div v-if="log.length > 0">
+            <table class="tb-result">
+                <tr>
+                    <th>Number of outcomes</th>
+                    <th>Time (seconds)</th>
+                </tr>
+                <tr v-for="r in log">
+                    <td>{{ r.n }}</td>
+                    <td>{{ tf4(r.dur) }}</td>
+                </tr>
+            </table>
+        </div>
+    </fieldset>
+</div>
+
+
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/echarts@5.3.0/dist/echarts.min.js"></script>
@@ -20,23 +248,193 @@
 <!-- <script src="./dist/metajs-0.0.2.js"></script> -->
 <script type="module">
 import { metajs } from './dist/metajs-esm-latest.js';
-
-var rs = [
-    [12,393,2,396, 'S1', 'T','C'],
-    [24,230,24,281, 'S2', 'T','C'],
-]
-
-var rst = metajs.metabin(
-    rs,
-    {
-        'sm': 'OR'
-    }
-);
-
-console.log(rst);
-
 const global = (0,eval)("this");
 global.metajs = metajs;
+</script>
+
+<script>
+var app_test = {
+    vpp: null,
+    vpp_id: '#app_test',
+    ocs: [],
+
+    init: function() {
+        
+        this.vpp = new Vue({
+            el: this.vpp_id,
+            data: {
+                n_ocs: null,
+
+                // sample
+                sample_txt: 'study,Et,Nt,Ec,Nc,treatment,control\nARCHES24,139,572,147,574,Treat,Placebo\nENZAMET7,321,563,241,558,Treat,Placebo\nLATITUDE,411,597,309,602,Treat,Placebo\nSTAMPEDE,288,592,399,1184,Treat,Placebo\nCHKMT154,155,422,287,1072,Treat,Placebo\nTXNMRX23,223,531,280,588,Treat,Placebo\nQWERTXBN,198,401,220,420,Treat,Placebo\nTUXSWX09,252,531,314,707,Treat,Placebo\nPROTE002,353,662,505,888,Treat,Placebo\nATLASTX2,364,703,236,629,Treat,Placebo',
+
+                // the log of tests
+                log: [],
+
+                // duration of calculation
+                dur: null,
+
+                // flag
+                is_testing: false,
+
+                // the n_times
+                n_times: 10,
+
+                // results
+                results: []
+            },
+            methods: {
+
+                run_sample: function() {
+                    this.clear();
+                    // split text
+                    var lines = this.sample_txt.split('\n');
+                    
+                    Papa.parse(this.sample_txt, {
+                        header: true,
+
+                        complete: function(rs) {
+                            console.log(rs);
+
+                            // parse outcomes
+                            var outcome = [];
+
+                            for (let i = 0; i < rs.data.length; i++) {
+                                const r = rs.data[i];
+                                outcome.push([
+                                    parseInt(r.Et), 
+                                    parseInt(r.Nt), 
+                                    parseInt(r.Ec), 
+                                    parseInt(r.Nc), 
+                                    r.study, r.treatment, r.control
+                                ]);
+                            }
+
+                            // now do ma
+                            var ret = app_test.run_pma([outcome]);
+
+                            // show
+                            app_test.vpp.$data.results = ret.results;
+                            app_test.vpp.$data.dur = ret.dur;
+                        }
+                    })
+                },
+
+                make_sample: function() {
+                    var sample = [
+                        'study,Et,Nt,Ec,Nc,treatment,control'
+                    ];
+
+                    var n = math.randomInt(2, 40);
+
+                    for (let i = 0; i < n; i++) {
+                        var et = math.randomInt(0, 100);
+                        var nt = math.randomInt(1, 100) + et;
+                        var ec = math.randomInt(0, 100);
+                        var nc = math.randomInt(1, 100) + ec;
+                        var study = math.random().toString(36).slice(7).toLocaleUpperCase();
+                        sample.push(
+                            [study, et, nt, ec, nc, 'Treat', 'Placebo'].map(v=>''+v).join(',')
+                        );
+                    }
+
+                    sample = sample.join('\n');
+
+                    this.sample_txt = sample;
+                },
+
+                demo: function(n) {
+                    this.clear();
+                    var idxes = math.pickRandom(Array.from(Array(10000).keys()), n);
+                    var ret = app_test.run_tests_idxes(idxes);
+
+                    // bind results
+                    this.results = ret.results;
+                    this.dur = ret.dur;
+                },
+
+                clear: function() {
+                    // clear log
+                    this.log = [];
+
+                    // clear dur
+                    this.dur = null;
+
+                    // clear results
+                    this.results = [];
+                },
+
+                run_tests_topn: function(n) {
+                    this.clear();
+                    this.is_testing = true;
+
+                    setTimeout('app_test.run_tests_topn('+n+');app_test.vpp.$data.is_testing = false;', 500);
+                },
+
+                run_tests_rounds: function() {
+                    this.clear();
+                    this.is_testing = true;
+
+                    setTimeout('app_test.run_tests_rounds();app_test.vpp.$data.is_testing = false;', 500);
+                },
+
+                run_tests_random: function(n) {
+                    this.clear();
+                    this.is_testing = true;
+                    
+                    setTimeout('app_test.run_tests_random('+this.n_times+');app_test.vpp.$data.is_testing = false;', 500);
+                },
+
+                tf2(v) {
+                    return v.toFixed(2);
+                },
+
+                tf4(v) {
+                    return v.toFixed(4);
+                }
+            }
+        });
+    
+    },
+
+    run_pma: function(outcomes) {
+        var results = [];
+
+        const t0 = performance.now();
+        for (let i = 0; i < outcomes.length; i++) {
+            const outcome = outcomes[i];
+            
+            var res = metajs.metabin(
+                outcome,
+                {}
+            );
+
+            // save the res
+            results.push({
+                oc: outcome,
+                res: res
+            });
+        }
+        const t1 = performance.now();
+        const dur = (t1 - t0) / 1000;
+
+        return {
+            dur: dur,
+            results: results
+        };
+    },
+};
+
+var jarvis = {
+    init: function() {
+        // init the app first
+        app_test.init();
+    }
+};
+
+$(document).ready(function() {
+    jarvis.init();
+});
 </script>
 </body>
 </html>
