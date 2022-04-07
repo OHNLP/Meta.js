@@ -85,8 +85,8 @@ p {
                 </button>
                 |
 
-                <button v-on:click="make_sample">
-                    Make random sample
+                <button v-on:click="make_sample_run">
+                    Make random sample and run PMA
                 </button>
             </div>
 
@@ -341,6 +341,11 @@ var app_test = {
                     sample = sample.join('\n');
 
                     this.sample_txt = sample;
+                },
+
+                make_sample_run: function() {
+                    this.make_sample();
+                    this.run_sample();
                 },
 
                 demo: function(n) {
