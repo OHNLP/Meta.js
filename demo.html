@@ -107,7 +107,19 @@ p {
             </p>
             <div class="mb-1"
                 style="display: flex; flex-direction: row; flex-wrap: wrap;">
-                <div v-for="val, key in results[0].res.params"
+                <div v-for="val, key in results[0].res.INCD.params"
+                    class="param-list">
+                    <div class="param-key">
+                        {{ key }}
+                    </div>
+                    <div class="param-val">
+                        {{ val }}
+                    </div>
+                </div>
+            </div>
+            <div class="mb-1"
+                style="display: flex; flex-direction: row; flex-wrap: wrap;">
+                <div v-for="val, key in results[0].res.OR.params"
                     class="param-list">
                     <div class="param-key">
                         {{ key }}
@@ -144,29 +156,29 @@ p {
                     <td>{{ stu[5] }}</td>
                     <td>{{ stu[6] }}</td>
 
-                    <td>{{ tf2(r.res.SM[stu_idx]) }}</td>
+                    <td>{{ tf2(r.res.OR.SM[stu_idx]) }}</td>
                     <td>
-                        {{ tf2(r.res.SM_lower[stu_idx]) }}, 
-                        {{ tf2(r.res.SM_upper[stu_idx]) }}
+                        {{ tf2(r.res.OR.SM_lower[stu_idx]) }}, 
+                        {{ tf2(r.res.OR.SM_upper[stu_idx]) }}
                     </td>
                     <td>
-                        {{ tf2(r.res.fixed.wp[stu_idx] * 100) }}%
+                        {{ tf2(r.res.OR.fixed.wp[stu_idx] * 100) }}%
                     </td>
                     <td>
-                        {{ tf2(r.res.random.wp[stu_idx] * 100) }}%
+                        {{ tf2(r.res.OR.random.wp[stu_idx] * 100) }}%
                     </td>
                 </tr>
                 <tr>
                     <td colspan="7">
-                        <b>Fixed Effect Model</b>
+                        <b>Incidence: Fixed Effect Model</b>
                     </td>
                     <td>
-                        {{ tf2(r.res.fixed.SM) }}
+                        {{ tf2(r.res.INCD.fixed.SM) }}
                     </td>
                     <td>
                         (
-                            {{ tf2(r.res.fixed.SM_lower) }}, 
-                            {{ tf2(r.res.fixed.SM_upper) }}
+                            {{ tf2(r.res.INCD.fixed.SM_lower) }}, 
+                            {{ tf2(r.res.INCD.fixed.SM_upper) }}
                         )
                     </td>
                     <td>
@@ -178,15 +190,79 @@ p {
                 </tr>
                 <tr>
                     <td colspan="7">
-                        <b>Random Effect Model</b>
+                        <b>Incidence: Random Effect Model</b>
                     </td>
                     <td>
-                        {{ tf2(r.res.random.SM) }}
+                        {{ tf2(r.res.INCD.random.SM) }}
                     </td>
                     <td>
                         (
-                            {{ tf2(r.res.random.SM_lower) }}, 
-                            {{ tf2(r.res.random.SM_upper) }}
+                            {{ tf2(r.res.INCD.random.SM_lower) }}, 
+                            {{ tf2(r.res.INCD.random.SM_upper) }}
+                        )
+                    </td>
+                    <td>
+                        &nbsp;
+                    </td>
+                    <td>
+                        100%
+                    </td>
+                </tr>
+
+                <tr>
+                    <td colspan="7">
+                        Heterogeneity:
+                    </td>
+                    <td>
+                        I<sup>2</sup>={{ tf2(r.res.INCD.heterogeneity.I2*100) }}%
+                    </td>
+                    <td>
+                        Tau<sup>2</sup>={{ tf4(r.res.INCD.heterogeneity.tau2) }}
+                    </td>
+                    <td>
+                        <span v-if="r.res.INCD.heterogeneity.pval_Q < 0.01">
+                            <i>p</i> &lt; 0.01
+                        </span>
+                        <span v-else>
+                            <i>p</i>={{ tf2(r.res.INCD.heterogeneity.pval_Q) }} 
+                        </span>
+                    </td>
+                    <td>
+                        &nbsp;
+                    </td>
+                </tr>
+
+                <tr>
+                    <td colspan="7">
+                        <b>OR: Fixed Effect Model</b>
+                    </td>
+                    <td>
+                        {{ tf2(r.res.OR.fixed.SM) }}
+                    </td>
+                    <td>
+                        (
+                            {{ tf2(r.res.OR.fixed.SM_lower) }}, 
+                            {{ tf2(r.res.OR.fixed.SM_upper) }}
+                        )
+                    </td>
+                    <td>
+                        100%
+                    </td>
+                    <td>
+                        &nbsp;
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="7">
+                        <b>OR: Random Effect Model</b>
+                    </td>
+                    <td>
+                        {{ tf2(r.res.OR.random.SM) }}
+                    </td>
+                    <td>
+                        (
+                            {{ tf2(r.res.OR.random.SM_lower) }}, 
+                            {{ tf2(r.res.OR.random.SM_upper) }}
                         )
                     </td>
                     <td>
@@ -201,17 +277,17 @@ p {
                         Heterogeneity:
                     </td>
                     <td>
-                        I<sup>2</sup>={{ tf2(r.res.heterogeneity.I2*100) }}%
+                        I<sup>2</sup>={{ tf2(r.res.OR.heterogeneity.I2*100) }}%
                     </td>
                     <td>
-                        Tau<sup>2</sup>={{ tf4(r.res.heterogeneity.tau2) }}
+                        Tau<sup>2</sup>={{ tf4(r.res.OR.heterogeneity.tau2) }}
                     </td>
                     <td>
-                        <span v-if="r.res.heterogeneity.pval_Q < 0.01">
+                        <span v-if="r.res.OR.heterogeneity.pval_Q < 0.01">
                             <i>p</i> &lt; 0.01
                         </span>
                         <span v-else>
-                            <i>p</i>={{ tf2(r.res.heterogeneity.pval_Q) }} 
+                            <i>p</i>={{ tf2(r.res.OR.heterogeneity.pval_Q) }} 
                         </span>
                     </td>
                     <td>
@@ -245,11 +321,11 @@ p {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/10.1.1/math.min.js"></script>
 
 <!-- <script type="module" src="./src/meta.js"></script> -->
-<!-- <script src="./dist/metajs-0.0.2.js"></script> -->
+<script src="./dist/metajs-0.0.3.js"></script>
 <script type="module">
-import { metajs } from './dist/metajs-esm-latest.js';
-const global = (0,eval)("this");
-global.metajs = metajs;
+// import { metajs } from './dist/metajs-esm-latest.js';
+// const global = (0,eval)("this");
+// global.metajs = metajs;
 </script>
 
 <script>
@@ -409,7 +485,12 @@ var app_test = {
         for (let i = 0; i < outcomes.length; i++) {
             const outcome = outcomes[i];
             
-            var res = metajs.metabin(
+            var res_OR = metajs.metabin(
+                outcome,
+                {}
+            );
+
+            var res_incd = metajs.metaprop(
                 outcome,
                 {}
             );
@@ -417,7 +498,10 @@ var app_test = {
             // save the res
             results.push({
                 oc: outcome,
-                res: res
+                res: {
+                    OR: res_OR,
+                    INCD: res_incd
+                }
             });
         }
         const t1 = performance.now();
