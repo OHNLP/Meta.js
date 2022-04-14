@@ -670,6 +670,7 @@ export const metajs = {
             // the settings
             params: params
         }
+        ret = this.expand_ret(ret, rs, d2r);
 
         return ret;
     },
@@ -1060,6 +1061,9 @@ export const metajs = {
             // the settings
             params: params
         }
+
+        // expand the ret to it's original size of given
+        ret = this.expand_ret(ret, rs, d2r);
 
         return ret;
     },
@@ -1580,6 +1584,32 @@ export const metajs = {
         return x.map(v=>math.isNaN(v)?0:v);
     },
 
+    expand_list: function(vals, n, d2r) {
+        var vs = new Array(n).fill(NaN);
+        for (let i = 0; i < vals.length; i++) {
+            vs[d2r[i]] = vs[i];
+        }
+        return vs;
+    },
+
+    expand_ret: function(ret, rs, d2r) {
+        if (rs.length == Object.values(d2r).length) {
+            // which means the records are mapped to ret.ds 1:1
+            return ret;
+        }
+        // expand basic items
+        var attrs = ['TE', 'seTE', 'SM', 'SM_lower', 'SM_upper'];
+        for (let i = 0; i < attrs.length; i++) {
+            ret[attrs[i]] = this.expand_list(ret[attrs[i]], rs.length, d2r);
+        }
+        // expand fixed and random weights
+        ret.fixed.w = this.expand_list(ret.fixed.w, rs.length, d2r);
+        ret.fixed.wp = this.expand_list(ret.fixed.wp, rs.length, d2r);
+        ret.random.w = this.expand_list(ret.random.w, rs.length, d2r);
+        ret.random.wp = this.expand_list(ret.random.wp, rs.length, d2r);
+
+        return ret;
+    }
 }
 
 export const pnorm = {

@@ -79,6 +79,8 @@ ALL_ZERO_IN_BOTH,S04,0,45,0,26,Treatment,Control
 ALL_ZERO_IN_BOTH,S06,0,46,0,94,Treatment,Control
 ALL_ZERO_IN_BOTH,S07,0,47,0,90,Treatment,Control
 ALL_ZERO_IN_BOTH,S08,0,48,0,49,Treatment,Control
+BOTH_ZERO_IN_ONE,S01,0,393,0,396,Treat,Placebo
+BOTH_ZERO_IN_ONE,S02,24,230,24,281,Treat,Placebo
 ONLY_ONE_STUDY,S01,17,47,28,67,Treatment,Control
 ONLY_ONE_Z_IN_T,S01,0,45,28,65,Treatment,Control
 ONLY_ONE_Z_IN_C,S01,10,42,0,65,Treatment,Control

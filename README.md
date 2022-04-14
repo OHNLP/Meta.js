@@ -50,3 +50,28 @@ Apache-2.0 License
 
 `Meta.js` leverages Node.js and [Mocha](https://mochajs.org/) to conduct unittests to ensure the correctness of calculation. 
 You can run `npm test` to check the test results.
+
+# Change Log
+
+## 0.0.4 (2022-04-14)
+
+- Added checking for both zero cases
+- Added metaprop for incidence analysis
+- Added make script for creating ESM and script tag export
+- Updated test cases
+- Fixed mis-alignments for expanding results
+
+## 0.0.3 (2022-03-31)
+
+- Added metabin with random effect
+- Added random effect estimation by DL method
+- Updated dependency
+- Updated using Node.js for unit tests
+
+## 0.0.2
+
+- Added support for basic math packages
+
+## 0.0.1
+
+- Added basic functions for fixed effect estimation
