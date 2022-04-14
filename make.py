@@ -1,6 +1,11 @@
 #!/bin/bash
+import json
 
-version = '0.0.3'
+# load the version number from package.json
+version = json.load(open('package.json'))['version']
+print('* found version number is %s' % version)
+
+# filenames
 fn_src = './src/meta.js'
 fn_out_esm = './dist/metajs-esm-%s.js' % version
 fn_out_esm_latest = './dist/metajs-esm-latest.js'

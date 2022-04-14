@@ -627,23 +627,27 @@ export const metajs = {
         // Random effect model
         ///////////////////////////////
 
-        // TODO
-        // random = null;
-        if (params.sm == 'PLOGIT') {
-            random = this.__calc_random(TE, seTE, het);
+        // for TE.length == 1, just use same as fixed
+        if (TE.length == 1) {
+            // for only one study, random is same 
+            random = JSON.parse(JSON.stringify(fixed));
+        } else {
+            if (params.sm == 'PLOGIT') {
+                random = this.__calc_random(TE, seTE, het);
 
-            // backtransf
-            random.SM = this.expit(random.TE);
-            random.SM_lower = this.expit(random.TE_lower);
-            random.SM_upper = this.expit(random.TE_upper);
+                // backtransf
+                random.SM = this.expit(random.TE);
+                random.SM_lower = this.expit(random.TE_lower);
+                random.SM_upper = this.expit(random.TE_upper);
 
-        } else if (params.sm == 'PFT') {
-            random = this.__calc_random(TE, seTE, het);
+            } else if (params.sm == 'PFT') {
+                random = this.__calc_random(TE, seTE, het);
 
-            // backtransf
-            random.SM = this.asin2p(random.TE, ds.harmonic_mean);
-            random.SM_lower = this.asin2p(random.TE_lower, ds.harmonic_mean);
-            random.SM_upper = this.asin2p(random.TE_upper, ds.harmonic_mean);
+                // backtransf
+                random.SM = this.asin2p(random.TE, ds.harmonic_mean);
+                random.SM_lower = this.asin2p(random.TE_lower, ds.harmonic_mean);
+                random.SM_upper = this.asin2p(random.TE_upper, ds.harmonic_mean);
+            }
         }
 
         ///////////////////////////////////////////////////
@@ -1060,15 +1064,19 @@ export const metajs = {
         return ret;
     },
 
+    __mk_heterogeneity_nan: function() {
+        return {
+            I2: NaN, tau2: NaN, pval_Q: NaN
+        }
+    },
+
     __mk_metaprop_nan: function(rs, params) {
         var NaNs = Array(rs.length).fill(NaN);
         var _params = JSON.parse(JSON.stringify(params));
 
         return {
             ds: {},
-            heterogeneity: {
-                I2: NaN, tau2: NaN, pval_Q: NaN
-            },
+            heterogeneity: this.__mk_heterogeneity_nan(),
 
             // each study
             TE: NaNs,
@@ -1399,6 +1407,12 @@ export const metajs = {
         // RSS <- crossprod(Y, P) %*% Y
         // trP <- .tr(P)
         // tau2 <- ifelse(tau2.fix, tau2.val, (RSS - (k - p))/trP)
+
+        if (TE.length == 1) {
+            // if this is only one study, no heter
+            return this.__mk_heterogeneity_nan();
+        }
+
         var k = TE.length;
         var p = 1;
 
@@ -1494,11 +1508,7 @@ export const metajs = {
 
         if (TE.length == 1) {
             // if this is only one study, no heter
-            return {
-                I2: NaN,
-                tau2: NaN,
-                pval_Q: NaN
-            }
+            return this.__mk_heterogeneity_nan();
         }
 
         function Ccalc(x) {
