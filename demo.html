@@ -76,7 +76,7 @@ p {
             <div class="mb-1">
                 <p>A sample outcome with binary data</p>
                 <textarea id="sample_txt" 
-                    cols="50" 
+                    cols="40" 
                     rows="11" 
                     v-model="sample_txt"></textarea>
                 <br>
@@ -132,169 +132,194 @@ p {
             <p>
                 Results:
             </p>
-            <table v-for="r in results" 
-                class="mb-1 tb-result">
-                <tr>
-                    <th>Study <br>({{r.oc.length }} studies)</th>
-                    <th>Et</th>
-                    <th>Nt</th>
-                    <th>Ec</th>
-                    <th>Nc</th>
-                    <th>Treatment</th>
-                    <th>Control</th>
-                    <th>Odds Ratio</th>
-                    <th>Lower, Upper</th>
-                    <th>Weight<br>(Fixed)</th>
-                    <th>Weight<br>(Random)</th>
-                </tr>
-                <tr v-for="stu, stu_idx in r.oc">
-                    <td>{{ stu[4] }}</td>
-                    <td>{{ stu[0] }}</td>
-                    <td>{{ stu[1] }}</td>
-                    <td>{{ stu[2] }}</td>
-                    <td>{{ stu[3] }}</td>
-                    <td>{{ stu[5] }}</td>
-                    <td>{{ stu[6] }}</td>
+            <div v-for="r, r_idx in results" >
+                <!-- <button v-on:click="copy_table(r_idx)">
+                    Copy table
+                </button> -->
+                <div v-bind:id="'rst_table_' + r_idx">
+                    <table class="mb-1 tb-result">
+                        <tr>
+                            <th>Study <br>({{r.oc.length }} studies)</th>
+                            <th>Et</th>
+                            <th>Nt</th>
+                            <th>Ec</th>
+                            <th>Nc</th>
+                            <th>Treatment</th>
+                            <th>Control</th>
 
-                    <td>{{ tf2(r.res.OR.SM[stu_idx]) }}</td>
-                    <td>
-                        {{ tf2(r.res.OR.SM_lower[stu_idx]) }}, 
-                        {{ tf2(r.res.OR.SM_upper[stu_idx]) }}
-                    </td>
-                    <td>
-                        {{ tf2(r.res.OR.fixed.wp[stu_idx] * 100) }}%
-                    </td>
-                    <td>
-                        {{ tf2(r.res.OR.random.wp[stu_idx] * 100) }}%
-                    </td>
-                </tr>
-                <tr>
-                    <td colspan="7">
-                        <b>Incidence: Fixed Effect Model</b>
-                    </td>
-                    <td>
-                        {{ tf2(r.res.INCD.fixed.SM) }}
-                    </td>
-                    <td>
-                        (
-                            {{ tf2(r.res.INCD.fixed.SM_lower) }}, 
-                            {{ tf2(r.res.INCD.fixed.SM_upper) }}
-                        )
-                    </td>
-                    <td>
-                        100%
-                    </td>
-                    <td>
-                        &nbsp;
-                    </td>
-                </tr>
-                <tr>
-                    <td colspan="7">
-                        <b>Incidence: Random Effect Model</b>
-                    </td>
-                    <td>
-                        {{ tf2(r.res.INCD.random.SM) }}
-                    </td>
-                    <td>
-                        (
-                            {{ tf2(r.res.INCD.random.SM_lower) }}, 
-                            {{ tf2(r.res.INCD.random.SM_upper) }}
-                        )
-                    </td>
-                    <td>
-                        &nbsp;
-                    </td>
-                    <td>
-                        100%
-                    </td>
-                </tr>
+                            <th>Incidence</th>
+                            <th>Incidence<br>Lower, Upper</th>
+                            <th>Weight<br>(Fixed)</th>
+                            <th>Weight<br>(Random)</th>
 
-                <tr>
-                    <td colspan="7">
-                        Heterogeneity:
-                    </td>
-                    <td>
-                        I<sup>2</sup>={{ tf2(r.res.INCD.heterogeneity.I2*100) }}%
-                    </td>
-                    <td>
-                        Tau<sup>2</sup>={{ tf4(r.res.INCD.heterogeneity.tau2) }}
-                    </td>
-                    <td>
-                        <span v-if="r.res.INCD.heterogeneity.pval_Q < 0.01">
-                            <i>p</i> &lt; 0.01
-                        </span>
-                        <span v-else>
-                            <i>p</i>={{ tf2(r.res.INCD.heterogeneity.pval_Q) }} 
-                        </span>
-                    </td>
-                    <td>
-                        &nbsp;
-                    </td>
-                </tr>
+                            <th>Odds Ratio</th>
+                            <th>Odds Ratio<br>Lower, Upper</th>
+                            <th>Weight<br>(Fixed)</th>
+                            <th>Weight<br>(Random)</th>
+                        </tr>
+                        <tr v-for="stu, stu_idx in r.oc">
+                            <td>{{ stu[4] }}</td>
+                            <td>{{ stu[0] }}</td>
+                            <td>{{ stu[1] }}</td>
+                            <td>{{ stu[2] }}</td>
+                            <td>{{ stu[3] }}</td>
+                            <td>{{ stu[5] }}</td>
+                            <td>{{ stu[6] }}</td>
 
-                <tr>
-                    <td colspan="7">
-                        <b>OR: Fixed Effect Model</b>
-                    </td>
-                    <td>
-                        {{ tf2(r.res.OR.fixed.SM) }}
-                    </td>
-                    <td>
-                        (
-                            {{ tf2(r.res.OR.fixed.SM_lower) }}, 
-                            {{ tf2(r.res.OR.fixed.SM_upper) }}
-                        )
-                    </td>
-                    <td>
-                        100%
-                    </td>
-                    <td>
-                        &nbsp;
-                    </td>
-                </tr>
-                <tr>
-                    <td colspan="7">
-                        <b>OR: Random Effect Model</b>
-                    </td>
-                    <td>
-                        {{ tf2(r.res.OR.random.SM) }}
-                    </td>
-                    <td>
-                        (
-                            {{ tf2(r.res.OR.random.SM_lower) }}, 
-                            {{ tf2(r.res.OR.random.SM_upper) }}
-                        )
-                    </td>
-                    <td>
-                        &nbsp;
-                    </td>
-                    <td>
-                        100%
-                    </td>
-                </tr>
-                <tr>
-                    <td colspan="7">
-                        Heterogeneity:
-                    </td>
-                    <td>
-                        I<sup>2</sup>={{ tf2(r.res.OR.heterogeneity.I2*100) }}%
-                    </td>
-                    <td>
-                        Tau<sup>2</sup>={{ tf4(r.res.OR.heterogeneity.tau2) }}
-                    </td>
-                    <td>
-                        <span v-if="r.res.OR.heterogeneity.pval_Q < 0.01">
-                            <i>p</i> &lt; 0.01
-                        </span>
-                        <span v-else>
-                            <i>p</i>={{ tf2(r.res.OR.heterogeneity.pval_Q) }} 
-                        </span>
-                    </td>
-                    <td>
-                        &nbsp;
-                    </td>
-                </tr>
-            </table>
+                            <td>{{ tf2(r.res.INCD.SM[stu_idx]) }}</td>
+                            <td>
+                                {{ tf2(r.res.INCD.SM_lower[stu_idx]) }}, 
+                                {{ tf2(r.res.INCD.SM_upper[stu_idx]) }}
+                            </td>
+                            <td>
+                                {{ tf2(r.res.INCD.fixed.wp[stu_idx] * 100) }}%
+                            </td>
+                            <td>
+                                {{ tf2(r.res.INCD.random.wp[stu_idx] * 100) }}%
+                            </td>
+
+                            <td>{{ tf2(r.res.OR.SM[stu_idx]) }}</td>
+                            <td>
+                                {{ tf2(r.res.OR.SM_lower[stu_idx]) }}, 
+                                {{ tf2(r.res.OR.SM_upper[stu_idx]) }}
+                            </td>
+                            <td>
+                                {{ tf2(r.res.OR.fixed.wp[stu_idx] * 100) }}%
+                            </td>
+                            <td>
+                                {{ tf2(r.res.OR.random.wp[stu_idx] * 100) }}%
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="7">
+                                <b>Incidence: Fixed Effect Model</b>
+                            </td>
+                            <td>
+                                {{ tf2(r.res.INCD.fixed.SM) }}
+                            </td>
+                            <td>
+                                {{ tf2(r.res.INCD.fixed.SM_lower) }}, 
+                                {{ tf2(r.res.INCD.fixed.SM_upper) }}
+                            </td>
+                            <td>
+                                100%
+                            </td>
+                            <td>
+                                &nbsp;
+                            </td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td colspan="7">
+                                <b>Incidence: Random Effect Model</b>
+                            </td>
+                            <td>
+                                {{ tf2(r.res.INCD.random.SM) }}
+                            </td>
+                            <td>
+                                {{ tf2(r.res.INCD.random.SM_lower) }}, 
+                                {{ tf2(r.res.INCD.random.SM_upper) }}
+                            </td>
+                            <td>
+                                &nbsp;
+                            </td>
+                            <td>
+                                100%
+                            </td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                        </tr>
+
+                        <tr>
+                            <td colspan="7">
+                                Heterogeneity:
+                                I<sup>2</sup>={{ tf2(r.res.INCD.heterogeneity.I2*100) }}%
+                                &nbsp;&nbsp;
+                                Tau<sup>2</sup>={{ tf4(r.res.INCD.heterogeneity.tau2) }}
+                                &nbsp;&nbsp;
+                                <span v-if="r.res.INCD.heterogeneity.pval_Q < 0.01">
+                                    <i>p</i> &lt; 0.01
+                                </span>
+                                <span v-else>
+                                    <i>p</i>={{ tf2(r.res.INCD.heterogeneity.pval_Q) }} 
+                                </span>
+                            </td>
+                            <td colspan="8">
+                                &nbsp;
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td colspan="7">
+                                <b>OR: Fixed Effect Model</b>
+                            </td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>
+                                {{ tf2(r.res.OR.fixed.SM) }}
+                            </td>
+                            <td>
+                                {{ tf2(r.res.OR.fixed.SM_lower) }}, 
+                                {{ tf2(r.res.OR.fixed.SM_upper) }}
+                            </td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>
+                                100%
+                            </td>
+                            <td>
+                                &nbsp;
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="7">
+                                <b>OR: Random Effect Model</b>
+                            </td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>
+                                {{ tf2(r.res.OR.random.SM) }}
+                            </td>
+                            <td>
+                                {{ tf2(r.res.OR.random.SM_lower) }}, 
+                                {{ tf2(r.res.OR.random.SM_upper) }}
+                            </td>
+                            <td>&nbsp;</td>
+                            <td>&nbsp;</td>
+                            <td>
+                                &nbsp;
+                            </td>
+                            <td>
+                                100%
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="7">
+                                Heterogeneity:
+                                
+                                I<sup>2</sup>={{ tf2(r.res.OR.heterogeneity.I2*100) }}%
+                                &nbsp;&nbsp;
+                                Tau<sup>2</sup>={{ tf4(r.res.OR.heterogeneity.tau2) }}
+                                &nbsp;&nbsp;
+                                <span v-if="r.res.OR.heterogeneity.pval_Q < 0.01">
+                                    <i>p</i> &lt; 0.01
+                                </span>
+                                <span v-else>
+                                    <i>p</i>={{ tf2(r.res.OR.heterogeneity.pval_Q) }} 
+                                </span>
+                            </td>
+                            <td colspan="8">
+                                &nbsp;
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
         </div>
 
         <div v-if="log.length > 0">
@@ -472,6 +497,14 @@ var app_test = {
 
                 tf4(v) {
                     return v.toFixed(4);
+                },
+
+                copy_table: function(idx) {
+                    jarvis.copy_to_clipboard(
+                        document.getElementById(
+                            'rst_table_' + idx
+                        )
+                    );
                 }
             }
         });
@@ -518,6 +551,50 @@ var jarvis = {
     init: function() {
         // init the app first
         app_test.init();
+    },
+
+    /**
+     * https://www.aspsnippets.com/questions/754238/Copy-HTML-Table-along-with-format-to-clipboard-using-JavaScript/
+     */
+    copy_to_clipboard: function(elem) {
+        var targetId = "_hiddenCopyText_";
+        var isInput = elem.tagName === "INPUT" || elem.tagName === "TEXTAREA";
+        var origSelectionStart, origSelectionEnd;
+        if (isInput) {
+            target = elem;
+            origSelectionStart = elem.selectionStart;
+            origSelectionEnd = elem.selectionEnd;
+        } else {
+            target = document.getElementById(targetId);
+            if (!target) {
+                var target = document.createElement("textarea");
+                target.style.position = "absolute";
+                target.style.left = "-9999px";
+                target.style.top = "0";
+                target.id = targetId;
+                document.body.appendChild(target);
+            }
+            target.textContent = elem.innerHTML;
+        }
+        var currentFocus = document.activeElement;
+        target.focus();
+        target.setSelectionRange(0, target.value.length);
+        var succeed;
+        try {
+            succeed = document.execCommand("copy");
+        } catch (e) {
+            succeed = false;
+        }
+        if (currentFocus && typeof currentFocus.focus === "function") {
+            currentFocus.focus();
+        }
+
+        if (isInput) {
+            elem.setSelectionRange(origSelectionStart, origSelectionEnd);
+        } else {
+            target.textContent = "";
+        }
+        return succeed;
     }
 };
 

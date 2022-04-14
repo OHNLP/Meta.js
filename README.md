@@ -59,6 +59,7 @@ You can run `npm test` to check the test results.
 - Added metaprop for incidence analysis
 - Added make script for creating ESM and script tag export
 - Updated test cases
+- Updated demo page with more columns
 - Fixed mis-alignments for expanding results
 
 ## 0.0.3 (2022-03-31)
