@@ -80,16 +80,42 @@ p {
                     rows="11" 
                     v-model="sample_txt"></textarea>
                 <br>
-                <button v-on:click="run_sample">
+                <button v-on:click="run_sample"
+                    :disabled="is_testing">
                     Run PMA
                 </button>
                 |
 
-                <button v-on:click="make_sample_run">
+                <button v-on:click="make_sample_run"
+                    :disabled="is_testing">
                     Make random sample and run PMA
                 </button>
             </div>
+            
+            <hr>
 
+            <div style="display: inline;">
+                <button v-on:click="run_test(1000, 50, 'OR')"
+                    :disabled="is_testing">
+                    Run PMA for OR on 1,000 outcomes 50 times.
+                </button>
+                
+                <br>
+                <br>
+
+                <button v-on:click="run_test(1000, 50, 'RR')"
+                    :disabled="is_testing">
+                    Run PMA for RR on 1,000 outcomes 50 times.
+                </button>
+                
+                <br>
+                <br>
+
+                <button v-on:click="run_test(1000, 50, 'INCD')"
+                    :disabled="is_testing">
+                    Run PMA for Incidence on 1,000 outcomes 50 times.
+                </button>
+            </div>
         </div>
     </fieldset>
 
@@ -382,7 +408,10 @@ var app_test = {
                 n_times: 10,
 
                 // results
-                results: []
+                results: [],
+
+                // latest perf results
+                perf_results: null
             },
             methods: {
 
@@ -421,27 +450,88 @@ var app_test = {
                     })
                 },
 
+                run_test: function(n_ocs, n_times, sm) {
+                    this.is_testing = true;
+                    var perf_results = [];
+
+                    for (let t = 0; t < n_times; t++) {
+                        // create dataset
+                        var ocs = [];
+                        for (let i = 0; i < n_ocs; i++) {
+                            var oc = this.make_sample();
+                            ocs.push(oc);
+                        }
+
+                        // run MA
+                        const t0 = performance.now();
+                        for (let i = 0; i < ocs.length; i++) {
+                            const outcome = ocs[i];
+                            var res = null;
+
+                            if (sm == 'OR') {
+
+                                res = metajs.metabin(
+                                    outcome,
+                                    {}
+                                );
+
+                            } else if (sm == 'RR') {
+
+                                res = metajs.metabin(
+                                    outcome,
+                                    {
+                                        sm: 'RR'
+                                    }
+                                );
+
+                            } else if (sm == 'INCD') {
+                                res = metajs.metaprop(
+                                    outcome,
+                                    {}
+                                );
+                            }
+                        }
+                        const t1 = performance.now();
+                        const dur = (t1 - t0) / 1000;
+
+                        perf_results.push(dur);
+                        console.log('* ' + t + ', ' + dur);
+                    }
+                    this.is_testing = false;
+                    console.log('* ' + n_times + 'times of ' + n_ocs + " on " + sm);
+                    console.log(perf_results);
+                    this.perf_results = perf_results;
+                    return perf_results;
+                },
+
                 make_sample: function() {
                     var sample = [
                         'study,Et,Nt,Ec,Nc,treatment,control'
                     ];
+                    var rs = [];
 
-                    var n = math.randomInt(2, 40);
+                    // number of studies
+                    var n = math.randomInt(2, 50);
 
                     for (let i = 0; i < n; i++) {
-                        var et = math.randomInt(0, 100);
-                        var nt = math.randomInt(1, 100) + et;
-                        var ec = math.randomInt(0, 100);
-                        var nc = math.randomInt(1, 100) + ec;
+                        var et = math.randomInt(0, 50);
+                        var nt = math.randomInt(1, 50) + et;
+                        var ec = math.randomInt(0, 50);
+                        var nc = math.randomInt(1, 50) + ec;
                         var study = math.random().toString(36).slice(7).toLocaleUpperCase();
                         sample.push(
                             [study, et, nt, ec, nc, 'Treat', 'Placebo'].map(v=>''+v).join(',')
                         );
+                        rs.push([
+                            et, nt, ec, nc, study
+                        ]);
                     }
 
                     sample = sample.join('\n');
 
                     this.sample_txt = sample;
+
+                    return rs;
                 },
 
                 make_sample_run: function() {

@@ -21,7 +21,7 @@
 library('meta')
 
 # load all data
-all_data <- read.csv('sample.csv')
+all_data <- read.csv('./testsets/sample.csv')
 
 
 ######################################################################
@@ -29,7 +29,7 @@ all_data <- read.csv('sample.csv')
 ######################################################################
 
 ######################################################################
-# Single round for just 1,000 outcomes
+# 1. Single round for just 1,000 outcomes
 ######################################################################
 # set the n for number of tests
 n = 1000
@@ -46,10 +46,8 @@ for (i in 1:n) {
     Nc, 
     data = df, 
     studlab = study, 
-    comb.fixed = TRUE, 
-    comb.random = FALSE, 
     sm = "OR", 
-    method = "Inverse", 
+    method = "MH", 
     method.tau = "DL", 
     prediction = FALSE, 
     hakn = FALSE
@@ -64,7 +62,7 @@ forest.meta(results)
 
 
 ######################################################################
-# 1,000 to 10,000 outcomes
+# 2. 1,000 to 10,000 outcomes
 ######################################################################
 nn = (1:10)*1000
 
@@ -82,10 +80,8 @@ for (n in nn) {
       Nc, 
       data = df, 
       studlab = study, 
-      comb.fixed = TRUE, 
-      comb.random = FALSE, 
       sm = "OR", 
-      method = "Inverse", 
+      method = "MH", 
       method.tau = "DL", 
       prediction = FALSE, 
       hakn = FALSE
@@ -96,7 +92,7 @@ for (n in nn) {
 }
 
 ######################################################################
-# 10 rounds for random 1,000 outcomes
+# 3. 50 rounds for random 1,000 outcomes
 ######################################################################
 for (r in 1:50) {
   # get 1,000 outcomes
@@ -115,10 +111,8 @@ for (r in 1:50) {
       Nc, 
       data = df, 
       studlab = study, 
-      comb.fixed = TRUE, 
-      comb.random = FALSE, 
-      sm = "OR", 
-      method = "Inverse", 
+      sm = "RR", 
+      method = "MH", 
       method.tau = "DL", 
       prediction = FALSE, 
       hakn = FALSE
@@ -137,7 +131,7 @@ for (r in 1:50) {
 ######################################################################
 
 ######################################################################
-# Single round for just 1,000 outcomes
+# 1. Single round for just 1,000 outcomes
 ######################################################################
 # set the n for number of tests
 n = 1000
@@ -152,9 +146,7 @@ for (i in 1:n) {
     Nt,
     data = df,
     studlab = study,
-    sm = 'PLOGIT',
-    comb.fixed = TRUE,
-    comb.random = FALSE,
+    sm = 'PFT',
     method = 'Inverse'
   )
 }
@@ -167,7 +159,7 @@ forest.meta(results)
 
 
 ######################################################################
-# 10 rounds for 1,000 to 10,000 outcomes
+# 2. 10 rounds for 1,000 to 10,000 outcomes
 ######################################################################
 nn = (1:10)*1000
 
@@ -183,9 +175,7 @@ for (n in nn) {
       Nt,
       data = df,
       studlab = study,
-      sm = 'PLOGIT',
-      comb.fixed = TRUE,
-      comb.random = FALSE,
+      sm = 'PFT',
       method = 'Inverse'
     )
   }
@@ -194,11 +184,11 @@ for (n in nn) {
 }
 
 ######################################################################
-# 10 rounds for random 1,000 outcomes
+# 3. 50 rounds for random 1,000 outcomes
 ######################################################################
 for (r in 1:50) {
   # get 1,000 outcomes
-  n = sample(0:9999, size=100)
+  n = sample(0:9999, size=1000)
   # begin test
   start_time <- Sys.time()
   for (i in n) {
@@ -211,9 +201,7 @@ for (r in 1:50) {
       Nt,
       data = df,
       studlab = study,
-      sm = 'PLOGIT',
-      comb.fixed = TRUE,
-      comb.random = FALSE,
+      sm = 'PFT',
       method = 'Inverse'
     )
   }
