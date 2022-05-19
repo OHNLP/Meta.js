@@ -181,6 +181,36 @@ function debug_calc_n_graphs() {
     ]);
 
     console.log(ret);
+
+    // test 2
+    ret = metajs.calc_n_graphs([
+        {treat1: 'A', treat2: 'B'},
+        {treat1: 'A', treat2: 'C'},
+        {treat1: 'A', treat2: 'D'},
+        {treat1: 'A', treat2: 'E'},
+    ]);
+
+    console.log(ret);
+
+    // test 3
+    ret = metajs.calc_n_graphs([
+        {treat1: 'A', treat2: 'B'},
+        {treat1: 'K', treat2: 'C'},
+        {treat1: 'A', treat2: 'D'},
+        {treat1: 'A', treat2: 'E'},
+        {treat1: 'F', treat2: 'G'},
+    ]);
+
+    // test 5
+    ret = metajs.calc_n_graphs([
+        {treat1: 'A', treat2: 'B'},
+        {treat1: 'K', treat2: 'C'},
+        {treat1: 'H', treat2: 'D'},
+        {treat1: 'I', treat2: 'E'},
+        {treat1: 'F', treat2: 'G'},
+    ]);
+
+    console.log(ret);
 }
 
 debug_calc_n_graphs();

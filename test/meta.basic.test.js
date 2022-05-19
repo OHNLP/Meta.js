@@ -38,6 +38,40 @@ describe('testing metajs base functions', () => {
 });
 
 
+describe('testing metajs network functions', () => {
+    it('calc_n_graphs one graph should be 1', () => {
+        assert.equal(
+            metajs.calc_n_graphs([
+                {treat1: 'A', treat2: 'B'}
+            ]).length, 
+            1
+        );
+    });
+
+    it('calc_n_graphs two graphs should be 2', () => {
+        assert.equal(
+            metajs.calc_n_graphs([
+                {treat1: 'A', treat2: 'B'},
+                {treat1: 'C', treat2: 'D'},
+            ]).length, 
+            2
+        );
+    });
+
+    it('calc_n_graphs a lot of edges should be 1', () => {
+        assert.equal(
+            metajs.calc_n_graphs([
+                {treat1: 'Nivo', treat2: 'Suni'},
+                {treat1: 'Cabo', treat2: 'Suni'},
+                {treat1: 'CaboNivo', treat2: 'Suni'},
+                {treat1: 'Treat', treat2: 'Suni'},
+            ]).length, 
+            1
+        );
+    });
+});
+
+
 describe('testing metajs.metaprop functions', () => {
     it('simple case, fixed incd/PLOGIT by Inverse should be 0.15 (0.10, 0.21)', () => {
         var d = {
