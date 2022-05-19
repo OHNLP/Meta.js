@@ -46,10 +46,52 @@ The median time of the JavaScript version is 1.12s while the R version is 17.94s
 
 Apache-2.0 License
 
+# Usage
+
+Before loading Meta.js, please ensure the math.js is loaded.
+Meta.js can be loaded as a regular JavaScript file in the browser, use the global variable math to access the libary once loaded:
+
+```
+<!DOCTYPE HTML>
+<html>
+<head>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/10.1.1/math.min.js" type="text/javascript"></script>
+  <script src="meta.js" type="text/javascript"></script>
+</head>
+<body>
+  <script type="text/javascript">
+    var rs = [
+        [12,393,2,396, 'S1', 'T','C'],
+        [24,230,24,281, 'S2', 'T','C'],
+    ]
+    
+    var rst = metajs.metabin(
+        rs,
+        {
+            'sm': 'OR'
+        }
+    );
+    
+    console.log(rst);
+  </script>
+</body>
+</html>
+```
+
 # Development
 
 `Meta.js` leverages Node.js and [Mocha](https://mochajs.org/) to conduct unittests to ensure the correctness of calculation. 
-You can run `npm test` to check the test results.
+So you need to ensure a latest Node.js is installed before development. 
+Our development environment is Ubuntu 20.04.
+You can also install Ubuntu 20.04 VM on Windows to ensure the program works.
+
+After clone your own copy, run the following command to install the dependency:
+
+```
+npm install
+```
+
+Then, you can run `npm test` to check the test results.
 
 # Change Log
 
