@@ -267,11 +267,14 @@ export const metajs = {
      * 
      * Due to the complixty of input format, `netmeta` accepts list of dict object
      * [
-     *     {sm: 1.2, lower: 1.1, upper: 1.3, 
-     *      treat1: 'Nivo', treat2: 'Suni', 
-     *      study: 'TREX', year: 2020}, 
+     *     {
+     *      study: 'TREX', year: 2020,
+     *      sm: 1.2, lower: 1.1, upper: 1.3, 
+     *      treat1: 'Nivo', treat2: 'Suni',
+     *     }, 
      * ]
      * 
+     * Please make sure the data format and use dict as default
      * 
      * @param {Object} rs dataset
      * @param {Object} params configuration
@@ -305,15 +308,19 @@ export const metajs = {
         if (!params.hasOwnProperty('method_tau')) {
             params['method.tau'] = 'DL';
         }
-
-        // check if any treat1 == treat2
-
-        // check subgraph
         
         
         ///////////////////////////////////////////////////
         // (2) Read data
         ///////////////////////////////////////////////////
+        var _rs = [];
+        if (params['rs_format'] == 'list') {
+            // convert the dict format to list
+            
+            
+        } else {
+            _rs = rs;
+        }
 
         ///////////////////////////////////////////////////
         // (3) Store dataset
@@ -344,14 +351,85 @@ export const metajs = {
         // (4) Additional checks
         ///////////////////////////////////////////////////
 
+        // check if any treat1 == treat2
+
+        // check subgraph
+
 
         var ret = {};
 
         return ret;
     },
 
-    netconnection: function(rs) {
+    calc_n_graphs: function(rs) {
+        var graphs = [];
+        function union(setA, setB) {
+            let _union = new Set(setA);
+            for (let elem of setB) {
+                _union.add(elem);
+            }
+            return _union;
+        }
+        for (let i = 0; i < rs.length; i++) {
+            const r = rs[i];
+            var t1 = r.treat1;
+            var t2 = r.treat2;
 
+            if (i == 0) {
+                // for the first one, just create a new graph
+                graphs.push(
+                    new Set([t1, t2])
+                );
+                continue;
+            }
+
+            var flag_added_to_existed_graph = false;
+            var extended_graphs = [];
+            for (let j = 0; j < graphs.length; j++) {
+                var g = graphs[j];
+                
+                if (g.has(t1) || g.has(t2)) {
+                    // that's great, this graph contains t1 or t2
+                    // and both t1 and t2 can be added to this graph
+                    graphs[j].add(t1);
+                    graphs[j].add(t2);
+                    flag_added_to_existed_graph = true;
+                    extended_graphs.push(j);
+                }
+            }
+
+            if (flag_added_to_existed_graph) {
+                if (extended_graphs.length == 1) {
+                    // nothing, just added to one graph
+                } else {
+                    // wow! at least two 
+                    // first, merge
+                    var u = graphs[extended_graphs[0]];
+                    for (let j = 1; j < extended_graphs.length; j++) {
+                        var idx = extended_graphs[j];
+                        u = set_union(u, graphs[idx]);
+                    }
+                    var new_graphs = [u];
+
+                    // second, put other graphs
+                    for (let j = 0; j < graphs.length; j++) {
+                        if (extended_graphs.indexOf(j)==-1) {
+                            new_graphs.push(graphs[j]);
+                        }
+                    }
+                    // last, set graph to this new one
+                    graphs = new_graphs;
+                }
+            } else {
+                // too bad, creating a new graph
+                graphs.push(
+                    new Set([t1, t2])
+                );
+            }
+
+        }
+
+        return graphs;
     },
 
     /**
@@ -423,7 +501,6 @@ export const metajs = {
         var _rs = [];
         if (params['rs_format'] == 'dict') {
             // convert the dict format to list
-            var _rs = [];
             for (let i = 0; i < rs.length; i++) {
                 const r = rs[i];
                 var _e = NaN;
@@ -880,7 +957,6 @@ export const metajs = {
         var _rs = [];
         if (params['rs_format'] == 'dict') {
             // convert the dict format to list
-            var _rs = [];
             for (let i = 0; i < rs.length; i++) {
                 const r = rs[i];
                 _rs.push([

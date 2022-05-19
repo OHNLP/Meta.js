@@ -175,6 +175,16 @@ function debug_metaprop() {
     console.log(rst);
 }
 
-debug_metabin();
+function debug_calc_n_graphs() {
+    var ret = metajs.calc_n_graphs([
+        {treat1: 'A', treat2: 'B'}
+    ]);
+
+    console.log(ret);
+}
+
+debug_calc_n_graphs();
+
+// debug_metabin();
 // debug_metaprop();
 // debug_csv_read();
