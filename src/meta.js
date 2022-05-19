@@ -261,6 +261,98 @@ export const metajs = {
             statistic: statistic
         };
     },
+    
+    /**
+     * Network Meta-analysis based Frequentist Method
+     * 
+     * Due to the complixty of input format, `netmeta` accepts list of dict object
+     * [
+     *     {sm: 1.2, lower: 1.1, upper: 1.3, 
+     *      treat1: 'Nivo', treat2: 'Suni', 
+     *      study: 'TREX', year: 2020}, 
+     * ]
+     * 
+     * 
+     * @param {Object} rs dataset
+     * @param {Object} params configuration
+     */
+    netmeta: function(rs, params) {
+        
+        ///////////////////////////////////////////////////
+        // (1) Check data and set arguments
+        ///////////////////////////////////////////////////
+        // Yes, you can use default settings
+        if (typeof(params)=='undefined') {
+            params = {};
+        }
+        
+        if (!params.hasOwnProperty('rs_format')) {
+            params['rs_format'] = 'dict';
+        }
+        
+        if (!params.hasOwnProperty('reference_group')) {
+            params['reference_group'] = '';
+        }
+        
+        if (!params.hasOwnProperty('sm')) {
+            params['sm'] = 'HR';
+        }
+        
+        if (!params.hasOwnProperty('small_values')) {
+            params['small_values'] = 'good';
+        }
+
+        if (!params.hasOwnProperty('method_tau')) {
+            params['method.tau'] = 'DL';
+        }
+
+        // check if any treat1 == treat2
+
+        // check subgraph
+        
+        
+        ///////////////////////////////////////////////////
+        // (2) Read data
+        ///////////////////////////////////////////////////
+
+        ///////////////////////////////////////////////////
+        // (3) Store dataset
+        ///////////////////////////////////////////////////
+        var ds = {
+            studlab: [],
+
+            // pre data
+            TE: [],
+            seTE: [],
+            treat1: [],
+            treat2: [],
+            
+            // raw data
+            event1: [],
+            n1: [],
+            event2: [],
+            n2: [],
+
+            sd1: [],
+            sd2: [],
+
+            time1: [],
+            time2: []
+        };
+
+        ///////////////////////////////////////////////////
+        // (4) Additional checks
+        ///////////////////////////////////////////////////
+
+
+        var ret = {};
+
+        return ret;
+    },
+
+    netconnection: function(rs) {
+
+    },
 
     /**
      * Meta-analysis of single proportions
@@ -287,6 +379,10 @@ export const metajs = {
         // Yes, you can use default settings
         if (typeof(params)=='undefined') {
             params = {};
+        }
+        
+        if (!params.hasOwnProperty('rs_format')) {
+            params['rs_format'] = 'list';
         }
 
         if (!params.hasOwnProperty('input_format')) {
@@ -324,6 +420,29 @@ export const metajs = {
         ///////////////////////////////////////////////////
         // (2) Read data
         ///////////////////////////////////////////////////
+        var _rs = [];
+        if (params['rs_format'] == 'dict') {
+            // convert the dict format to list
+            var _rs = [];
+            for (let i = 0; i < rs.length; i++) {
+                const r = rs[i];
+                var _e = NaN;
+                var _n = NaN;
+
+                // the event and total can be defined in several ways
+                if (r.hasOwnProperty('Et')) { _e = r.Et; }
+                if (r.hasOwnProperty('event')) { _e = r.event; }
+                if (r.hasOwnProperty('Nt')) { _n = r.Nt; }
+                if (r.hasOwnProperty('total')) { _n = r.total; }
+                if (r.hasOwnProperty('n')) { _n = r.n; }
+                
+                _rs.push([
+                    _e, _n
+                ]);
+            }
+        } else {
+            _rs = rs;
+        }
 
 
         ///////////////////////////////////////////////////
@@ -346,8 +465,8 @@ export const metajs = {
         };
         // a mapping from ds index to rs index
         var d2r = {};
-        for (let i = 0; i < rs.length; i++) {
-            const r = rs[i];
+        for (let i = 0; i < _rs.length; i++) {
+            const r = _rs[i];
             // check the r
             if (r[0] > r[1]) {
                 // it's not possible that event > n
@@ -702,6 +821,10 @@ export const metajs = {
         if (typeof(params)=='undefined') {
             params = {};
         }
+        
+        if (!params.hasOwnProperty('rs_format')) {
+            params['rs_format'] = 'list';
+        }
 
         if (!params.hasOwnProperty('input_format')) {
             params['input_format'] = 'PRIM_CAT_RAW';
@@ -754,7 +877,19 @@ export const metajs = {
         ///////////////////////////////////////////////////
         // (2) Read data
         ///////////////////////////////////////////////////
-
+        var _rs = [];
+        if (params['rs_format'] == 'dict') {
+            // convert the dict format to list
+            var _rs = [];
+            for (let i = 0; i < rs.length; i++) {
+                const r = rs[i];
+                _rs.push([
+                    r.Et, r.Nt, r.Ec, r.Nc
+                ]);
+            }
+        } else {
+            _rs = rs;
+        }
 
         ///////////////////////////////////////////////////
         // (3) Check length of variables
@@ -779,8 +914,8 @@ export const metajs = {
         };
         // a mapping from ds index to rs index
         var d2r = {};
-        for (let i = 0; i < rs.length; i++) {
-            const r = rs[i];
+        for (let i = 0; i < _rs.length; i++) {
+            const r = _rs[i];
             // check the r
             if (r[0] > r[1]) {
                 // it's not possible that event > n
