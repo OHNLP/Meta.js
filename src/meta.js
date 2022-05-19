@@ -316,21 +316,34 @@ export const metajs = {
         var _rs = [];
         if (params['rs_format'] == 'list') {
             // convert the dict format to list
-            
-            
         } else {
             _rs = rs;
         }
+        
 
         ///////////////////////////////////////////////////
-        // (3) Store dataset
+        // (3) Additional checks
+        ///////////////////////////////////////////////////
+
+        // check if any treat1 == treat2
+
+        // check subgraph
+        var _graphs = this.calc_n_graphs(rs);
+        if (_graphs.length != 1) {
+            console.error('not supported network structure: ' + _graphs.length + ' sub-networks.');
+            return null;
+        }
+
+        ///////////////////////////////////////////////////
+        // (4) Store dataset
         ///////////////////////////////////////////////////
         var ds = {
             studlab: [],
 
             // pre data
-            TE: [],
-            seTE: [],
+            sm: [],
+            lower: [],
+            upper: [],
             treat1: [],
             treat2: [],
             
@@ -340,6 +353,10 @@ export const metajs = {
             event2: [],
             n2: [],
 
+            // parsed data
+            TE: [],
+            seTE: [],
+
             sd1: [],
             sd2: [],
 
@@ -347,16 +364,37 @@ export const metajs = {
             time2: []
         };
 
+        var d2r = {};
+        for (let i = 0; i < _rs.length; i++) {
+            const r = _rs[i];
+            
+            ds.studlab.push(r.study);
+            ds.sm.push(r.sm);
+            ds.lower.push(r.lower);
+            ds.upper.push(r.upper);
+            ds.treat1.push(r.treat1);
+            ds.treat2.push(r.treat2);
+            
+            // add mapping
+            d2r[ds.sm.length - 1] = i;
+        }
+
+        ds.TE = math.log(ds.sm);
+        ds.seTE = math.dotDivide(
+            math.subtract(
+                math.log(ds.upper),
+                math.log(ds.lower)
+            ),
+            3.92
+        );
+
         ///////////////////////////////////////////////////
-        // (4) Additional checks
+        // (5) Generate analysis dataset
         ///////////////////////////////////////////////////
 
-        // check if any treat1 == treat2
-
-        // check subgraph
-
-
-        var ret = {};
+        var ret = {
+            ds: ds
+        };
 
         return ret;
     },

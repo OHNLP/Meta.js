@@ -213,8 +213,27 @@ function debug_calc_n_graphs() {
     console.log(ret);
 }
 
-debug_calc_n_graphs();
+// sample data
+// CaboNivo	Suni	0.62	0.46	0.82
+// NivoIpi	Suni	0.54	0.46	0.63
+// AteBev	Suni	0.68	0.58	0.81
+// Pazo	    Suni	0.80	0.62	1.03
+// AteBev	Suni	0.74	0.45	1.2
+// PemAxi	Suni	1.12	0.91	1.38
 
-// debug_metabin();
-// debug_metaprop();
-// debug_csv_read();
+function debug_netmeta() {
+    var rs = [
+        {study: 'TRA', sm: 0.62, lower: 0.46, upper: 0.82, treat1: 'CaboNivo', treat2: 'Suni', year: 2020},
+        {study: 'TRB', sm: 0.54, lower: 0.46, upper: 0.63, treat1: 'NivoIpi', treat2: 'Suni', year: 2021},
+        {study: 'TRC', sm: 0.68, lower: 0.58, upper: 0.81, treat1: 'AteBev', treat2: 'Suni', year: 2022},
+        {study: 'TRD', sm: 0.80, lower: 0.62, upper: 1.03, treat1: 'Pazo', treat2: 'Suni', year: 2022},
+        {study: 'TRE', sm: 0.74, lower: 0.45, upper: 1.20, treat1: 'AteBev', treat2: 'Suni', year: 2022},
+        {study: 'TRF', sm: 1.12, lower: 0.91, upper: 1.38, treat1: 'PemAxi', treat2: 'Suni', year: 2022},
+    ];
+
+    var ret = metajs.netmeta(rs, {});
+
+    console.log(ret);
+};
+
+debug_netmeta();
