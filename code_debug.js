@@ -177,37 +177,37 @@ function debug_metaprop() {
 
 function debug_calc_n_graphs() {
     var ret = metajs.calc_n_graphs([
-        {treat1: 'A', treat2: 'B'}
+        {t1: 'A', t2: 'B'}
     ]);
 
     console.log(ret);
 
     // test 2
     ret = metajs.calc_n_graphs([
-        {treat1: 'A', treat2: 'B'},
-        {treat1: 'A', treat2: 'C'},
-        {treat1: 'A', treat2: 'D'},
-        {treat1: 'A', treat2: 'E'},
+        {t1: 'A', t2: 'B'},
+        {t1: 'A', t2: 'C'},
+        {t1: 'A', t2: 'D'},
+        {t1: 'A', t2: 'E'},
     ]);
 
     console.log(ret);
 
     // test 3
     ret = metajs.calc_n_graphs([
-        {treat1: 'A', treat2: 'B'},
-        {treat1: 'K', treat2: 'C'},
-        {treat1: 'A', treat2: 'D'},
-        {treat1: 'A', treat2: 'E'},
-        {treat1: 'F', treat2: 'G'},
+        {t1: 'A', t2: 'B'},
+        {t1: 'K', t2: 'C'},
+        {t1: 'A', t2: 'D'},
+        {t1: 'A', t2: 'E'},
+        {t1: 'F', t2: 'G'},
     ]);
 
     // test 5
     ret = metajs.calc_n_graphs([
-        {treat1: 'A', treat2: 'B'},
-        {treat1: 'K', treat2: 'C'},
-        {treat1: 'H', treat2: 'D'},
-        {treat1: 'I', treat2: 'E'},
-        {treat1: 'F', treat2: 'G'},
+        {t1: 'A', t2: 'B'},
+        {t1: 'K', t2: 'C'},
+        {t1: 'H', t2: 'D'},
+        {t1: 'I', t2: 'E'},
+        {t1: 'F', t2: 'G'},
     ]);
 
     console.log(ret);
@@ -223,12 +223,12 @@ function debug_calc_n_graphs() {
 
 function debug_netmeta() {
     var rs = [
-        {study: 'TRA', sm: 0.62, lower: 0.46, upper: 0.82, treat1: 'CaboNivo', treat2: 'Suni', year: 2020},
-        {study: 'TRB', sm: 0.54, lower: 0.46, upper: 0.63, treat1: 'NivoIpi', treat2: 'Suni', year: 2021},
-        {study: 'TRC', sm: 0.68, lower: 0.58, upper: 0.81, treat1: 'AteBev', treat2: 'Suni', year: 2022},
-        {study: 'TRD', sm: 0.80, lower: 0.62, upper: 1.03, treat1: 'Pazo', treat2: 'Suni', year: 2022},
-        {study: 'TRE', sm: 0.74, lower: 0.45, upper: 1.20, treat1: 'AteBev', treat2: 'Suni', year: 2022},
-        {study: 'TRF', sm: 1.12, lower: 0.91, upper: 1.38, treat1: 'PemAxi', treat2: 'Suni', year: 2022},
+        {study: 'SA', sm: 0.62, lower: 0.46, upper: 0.82, t1: 'CaboNivo', t2: 'Suni', year: 2020},
+        {study: 'SB', sm: 0.54, lower: 0.46, upper: 0.63, t1: 'NivoIpi', t2: 'Suni', year: 2021},
+        {study: 'SC', sm: 0.68, lower: 0.58, upper: 0.81, t1: 'AteBev', t2: 'Suni', year: 2022},
+        {study: 'SD', sm: 0.80, lower: 0.62, upper: 1.03, t1: 'Pazo', t2: 'Suni', year: 2022},
+        {study: 'SE', sm: 0.74, lower: 0.45, upper: 1.20, t1: 'AteBev', t2: 'Suni', year: 2022},
+        {study: 'SF', sm: 1.12, lower: 0.91, upper: 1.38, t1: 'PemAxi', t2: 'Suni', year: 2022},
     ];
 
     var ret = metajs.netmeta(rs, {});

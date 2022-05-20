@@ -270,7 +270,7 @@ export const metajs = {
      *     {
      *      study: 'TREX', year: 2020,
      *      sm: 1.2, lower: 1.1, upper: 1.3, 
-     *      treat1: 'Nivo', treat2: 'Suni',
+     *      t1: 'Nivo', t2: 'Suni',
      *     }, 
      * ]
      * 
@@ -356,6 +356,13 @@ export const metajs = {
             // parsed data
             TE: [],
             seTE: [],
+            weights: [],
+            treats: [],
+            n_treats: 0,
+            trt2idx: {},
+            pos1: [],
+            pos2: [],
+            narms: [],
 
             sd1: [],
             sd2: [],
@@ -372,13 +379,14 @@ export const metajs = {
             ds.sm.push(r.sm);
             ds.lower.push(r.lower);
             ds.upper.push(r.upper);
-            ds.treat1.push(r.treat1);
-            ds.treat2.push(r.treat2);
+            ds.treat1.push(r.t1);
+            ds.treat2.push(r.t2);
             
             // add mapping
             d2r[ds.sm.length - 1] = i;
         }
 
+        // parse the data
         ds.TE = math.log(ds.sm);
         ds.seTE = math.dotDivide(
             math.subtract(
@@ -388,12 +396,250 @@ export const metajs = {
             3.92
         );
 
+        // weights <- 1 / (seTE^2 + tau^2)
+        // since tau is 0, just skip
+        ds.weights = math.dotDivide(
+            1,
+            math.dotPow(ds.seTE, 2)
+        );
+
+        // get unique treats
+        ds.treats = math.setUnion(
+            Array.from(new Set(ds.treat1)),
+            Array.from(new Set(ds.treat2))
+        );
+        // get the number of uniuqe treats
+        ds.n_treats = ds.treats.length;
+        // sort all treats a-z
+        ds.treats.sort();
+        // create a mapping from treat to index
+        for (let i = 0; i < ds.treats.length; i++) {
+            const trt = ds.treats[i];
+            ds.trt2idx[trt] = i;
+        }
+        // create a mapping for both treat1 and 2
+        for (let i = 0; i < ds.treat1.length; i++) {
+            // update pos1
+            const trt1 = ds.treat1[i];
+            ds.pos1.push(ds.trt2idx[trt1]);
+
+            // update pos2
+            const trt2 = ds.treat2[i];
+            ds.pos2.push(ds.trt2idx[trt2]);
+        }
+        
+        // update narms
+        // TODO fix the number n_arms
+        ds.narms = math.dotMultiply(
+            2,
+            math.ones(ds.TE.length, 1)
+        );
+
+        // TODO multi-arm adjust weights
+
+
         ///////////////////////////////////////////////////
-        // (5) Generate analysis dataset
+        // Fixed effect model
+        ///////////////////////////////////////////////////
+        // helper functions 
+        function createB(ds) {
+            if (typeof(ds) == 'number') {
+                var ncol = ds;
+                var nrow = math.combinations(ncol, 2);
+                var B = math.zeros(
+                    nrow,
+                    ncol
+                ).toArray();
+                var ix = -1;
+                for (let i = 0; i < ncol - 1; i++) {
+                    for (let j = i+1; j < ncol; j++) {
+                        ix += 1;
+                        B[ix][i] = 1;
+                        B[ix][j] =-1;
+                    }
+                }
+                return B;
+            }
+
+            // nrow <- length(pos1)
+            // ncol <- length(unique(c(pos1, pos2)))
+            // B <- matrix(0, nrow = nrow, ncol = ncol)
+            // for (i in 1:nrow) {
+            //   B[i, pos1[i]] <- 1
+            //   B[i, pos2[i]] <- -1
+            // }
+            var nrow = ds.treat1.length;
+            var ncol = ds.n_treats;
+            var B = math.zeros(
+                nrow,
+                ncol
+            ).toArray();
+            for (let i = 0; i < nrow; i++) {
+                B[i][ds.pos1[i]] = 1;
+                B[i][ds.pos2[i]] =-1;
+            }
+            return B;
+        }
+
+        // start start!
+        var m = ds.TE.length;
+        var W = math.diag(ds.weights);
+        var df1 = 2 * math.sum(
+            math.dotDivide(
+                1,
+                ds.narms
+            )
+        );
+        var B = createB(ds);
+        var B_full = createB(ds.n_treats);
+
+        // M is the unweighted Laplacian, D its diagonal,
+        var M = math.multiply(
+            math.transpose(B),
+            B
+        );
+        var D = math.diag(math.diag(M));
+        var A = math.subtract(D, M);
+
+        // L is the weighted Laplacian (Kirchhoff) matrix (n x n)
+        var L = math.multiply(
+            math.multiply(
+                math.transpose(B),
+                W
+            ), B
+        );
+
+        // Lplus is its Moore-Penrose pseudoinverse
+        var Lplus = math.add(
+            math.inv(
+                math.subtract(
+                    L,
+                    1/ds.n_treats
+                )
+            ),
+            1/ds.n_treats
+        );
+
+        // R resistance distance (variance) matrix (n x n)
+        var R = math.zeros(
+            ds.n_treats,
+            ds.n_treats
+        ).toArray();
+
+        for (let i = 0; i < ds.n_treats; i++) {
+            for (let j = 0; j < ds.n_treats; j++) {
+                // R[i, j] <- Lplus[i, i] + Lplus[j, j] - 2 * Lplus[i, j]
+                R[i][j] = Lplus[i][i] + Lplus[j][j] - 2 * Lplus[i][j];
+            }
+        }
+        
+        // V is the vector of effective variances
+        // V <- vector(length = m, mode = "numeric")
+        // for (i in 1:m) {
+        //     V[i] <- R[treat1.pos[i], treat2.pos[i]]
+        // }
+        var V = [];
+        for (let i = 0; i < m; i++) {
+            V.push(R[ds.pos1[i]][ds.pos2[i]]);
+        }
+
+        // G is the matrix B %*% Lplus %*% t(B)
+        // H is the projection matrix (also called "hat matrix")
+        var G = math.multiply(
+            math.multiply(
+                B,
+                Lplus
+            ),
+            math.transpose(B)
+        );
+        var H = math.multiply(
+            G,
+            W
+        );
+
+        // Cov is Variance-covariance matrix for all comparisons
+        // Cov <- B.full %*% Lplus %*% t(B.full)
+        var Cov = math.multiply(
+            math.multiply(
+                B_full,
+                Lplus
+            ),
+            math.transpose(B_full)
+        );
+
+        // Resulting effects and variances at numbered edges
+        var HTE = math.multiply(
+            H,
+            ds.TE
+        );
+        var v = math.flatten(HTE);
+        var ci_v = this.ci95(v, math.sqrt(V));
+
+        // Resulting effects, all edges, as a n x n matrix:
+        var all = new Array(ds.n_treats).fill(0).map(() => new Array(ds.n_treats).fill(NaN));
+
+        // first, put all results of direct evidence in v
+        for (let i = 0; i < m; i++) {
+            all[ds.pos1[i]][ds.pos2[i]] = v[i];
+        }
+        
+        // update all
+        for (let i = 0; i < ds.n_treats; i++) {
+            for (let j = 0; j < ds.n_treats; j++) {
+                for (let k = 0; k < ds.n_treats; k++) {
+                    if (!isNaN(all[i][k]) && !isNaN(all[j][k])) {
+                        all[i][j] = all[i][k] - all[j][k];
+                        all[j][i] = all[j][k] - all[i][k];
+                    }
+                    if (!isNaN(all[i][j]) && !isNaN(all[k][j])) {
+                        all[i][k] = all[i][j] - all[k][j];
+                        all[k][i] = all[k][j] - all[i][j];
+                    }
+                    if (!isNaN(all[i][k]) && !isNaN(all[i][j])) {
+                        all[j][k] = all[i][k] - all[i][j];
+                        all[k][j] = all[i][j] - all[i][k];
+                    }
+                }                
+            }
+        }
+
+        // Test of total heterogeneity / inconsistency:
+        
+
+        // Results
+        var TE_fixed = all;
+        var seTE_fixed = math.sqrt(R);
+        var TE_fixed_lower = math.add(
+            TE_fixed,
+            math.dotMultiply(-1.96, seTE_fixed)
+        );
+        var TE_fixed_upper = math.add(
+            TE_fixed,
+            math.dotMultiply(1.96, seTE_fixed)
+        );
+
+        // convert to SM
+        var SM_fixed = math.exp(TE_fixed);
+        var SM_fixed_lower = math.exp(TE_fixed_lower);
+        var SM_fixed_upper = math.exp(TE_fixed_upper);
+
+        var fixed = {
+            TE: TE_fixed,
+            seTE: seTE_fixed,
+
+            SM: SM_fixed,
+            SM_lower: SM_fixed_lower,
+            SM_upper: SM_fixed_upper
+        };
+
+        ///////////////////////////////////////////////////
+        // Generate analysis dataset
         ///////////////////////////////////////////////////
 
         var ret = {
-            ds: ds
+            ds: ds,
+
+            fixed: fixed
         };
 
         return ret;
@@ -410,8 +656,8 @@ export const metajs = {
         }
         for (let i = 0; i < rs.length; i++) {
             const r = rs[i];
-            var t1 = r.treat1;
-            var t2 = r.treat2;
+            var t1 = r.t1;
+            var t2 = r.t2;
 
             if (i == 0) {
                 // for the first one, just create a new graph
