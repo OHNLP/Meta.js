@@ -396,13 +396,6 @@ export const metajs = {
             3.92
         );
 
-        // weights <- 1 / (seTE^2 + tau^2)
-        // since tau is 0, just skip
-        ds.weights = math.dotDivide(
-            1,
-            math.dotPow(ds.seTE, 2)
-        );
-
         // get unique treats
         ds.treats = math.setUnion(
             Array.from(new Set(ds.treat1)),
@@ -441,6 +434,38 @@ export const metajs = {
         ///////////////////////////////////////////////////
         // Fixed effect model
         ///////////////////////////////////////////////////
+        var fixed = {};
+
+        // get fixed effect model
+        fixed = this.__nma_ruecker(ds);
+
+        
+        ///////////////////////////////////////////////////
+        // Random effect model
+        ///////////////////////////////////////////////////
+        var random = {};
+
+        // get random effect model
+        random = this.__nma_ruecker(ds, fixed.tau);
+
+        ///////////////////////////////////////////////////
+        // Generate analysis dataset
+        ///////////////////////////////////////////////////
+
+        var ret = {
+            ds: ds,
+
+            fixed: fixed,
+            random: random
+        };
+
+        return ret;
+    },
+
+    __nma_ruecker: function(ds, tau) {
+        if (typeof(tau) == 'undefined') {
+            tau = 0;
+        }
         // helper functions 
         function createB(ds) {
             if (typeof(ds) == 'number') {
@@ -481,9 +506,28 @@ export const metajs = {
             return B;
         }
 
+        // weights <- 1 / (seTE^2 + tau^2)
+        // since tau is 0, just skip
+        var weights = NaN;
+        
+        if (tau == 0) {
+            weights = math.dotDivide(
+                1,
+                math.dotPow(ds.seTE, 2)
+            );
+        } else {
+            weights = math.dotDivide(
+                1,
+                math.add(
+                    math.dotPow(ds.seTE, 2),
+                    math.dotPow(tau, 2)
+                )
+            );
+        }
+
         // start start!
         var m = ds.TE.length;
-        var W = math.diag(ds.weights);
+        var W = math.diag(weights);
         var df1 = 2 * math.sum(
             math.dotDivide(
                 1,
@@ -604,45 +648,180 @@ export const metajs = {
         }
 
         // Test of total heterogeneity / inconsistency:
-        
+        // Q <- as.vector(t(TE - v) %*% W %*% (TE - v))
+        // df <- df1 - (n - 1)
+        var Q = math.multiply(
+            math.multiply(
+                math.transpose(math.subtract(ds.TE, v)),
+                W
+            ),
+            math.subtract(ds.TE, v)
+        );
+        var df = df1 - (ds.n_treats - 1);
+
+        // Heterogeneity variance
+        var I = math.diag(math.ones(m)).toArray();
+        var E = math.zeros([m, m]);
+        for (let i = 0; i < m; i++) {
+            for (let j = 0; j < m; j++) {
+                // https://stackoverflow.com/questions/14787761/convert-true-1-and-false-0-in-javascript
+                E[i][j] = ds.studlab[i] == ds.studlab[j] | 0;                
+            }
+        }
+        var tau2 = NaN;
+        var tau = NaN;
+        var I2 = NaN;
+        if (df != 0) {
+            // tau2 <- max(0, (Q - df) / sum(diag( (I - H) %*% (B %*% t(B) * E / 2) %*% W)) )
+            tau2 = math.max(
+                0,
+                (Q - df) / math.sum(
+                    math.diag(
+                        math.multiply(
+                            math.multiply(
+                                math.subtract(I, H),
+                                math.dotMultiply(
+                                    math.multiply(B, math.transpose(B)),
+                                    math.dotMultiply(E, 0.5)
+                                )
+                            ),
+                            W
+                        )
+                    )
+                )
+            )
+            tau = math.sqrt(tau2);
+        }
 
         // Results
-        var TE_fixed = all;
-        var seTE_fixed = math.sqrt(R);
-        var TE_fixed_lower = math.add(
-            TE_fixed,
-            math.dotMultiply(-1.96, seTE_fixed)
+        var TE_pooled = all;
+        var seTE_pooled = math.sqrt(R);
+
+        // pval
+        var ci_pooled = this.ci95(TE_pooled, seTE_pooled);
+        var pval_pooled = ci_pooled.pval;
+
+        // get lower and upper
+        var TE_pooled_lower = math.add(
+            TE_pooled,
+            math.dotMultiply(-1.96, seTE_pooled)
         );
-        var TE_fixed_upper = math.add(
-            TE_fixed,
-            math.dotMultiply(1.96, seTE_fixed)
+        var TE_pooled_upper = math.add(
+            TE_pooled,
+            math.dotMultiply(1.96, seTE_pooled)
         );
 
         // convert to SM
-        var SM_fixed = math.exp(TE_fixed);
-        var SM_fixed_lower = math.exp(TE_fixed_lower);
-        var SM_fixed_upper = math.exp(TE_fixed_upper);
-
-        var fixed = {
-            TE: TE_fixed,
-            seTE: seTE_fixed,
-
-            SM: SM_fixed,
-            SM_lower: SM_fixed_lower,
-            SM_upper: SM_fixed_upper
-        };
-
-        ///////////////////////////////////////////////////
-        // Generate analysis dataset
-        ///////////////////////////////////////////////////
+        var SM_pooled = math.exp(TE_pooled);
+        var SM_pooled_lower = math.exp(TE_pooled_lower);
+        var SM_pooled_upper = math.exp(TE_pooled_upper);
 
         var ret = {
-            ds: ds,
+            tau2: tau2,
+            tau: tau,
+            I2: I2,
 
-            fixed: fixed
+            pval: pval_pooled,
+
+            TE: TE_pooled,
+            seTE: seTE_pooled,
+
+            SM: SM_pooled,
+            SM_lower: SM_pooled_lower,
+            SM_upper: SM_pooled_upper
         };
 
         return ret;
+    },
+
+    netrank: function(nma, small_values) {
+        if (typeof(small_values) == 'undefined') {
+            small_values = 'good';
+        }
+        var ret = {
+            fixed: {},
+            random: {}
+        };
+        
+        for (let i = 0; i < 2; i++) {
+            var fixed_or_random = ['fixed', 'random'][i];
+
+            var w = math.dotDivide(
+                math.add(
+                    1,
+                    math.sign(nma[fixed_or_random].TE)
+                ),
+                2
+            );
+            var p = nma[fixed_or_random].pval;
+
+            // if (small.values == "good")
+            //     P.fixed <- w.fixed * p.fixed / 2 + (1 - w.fixed) * (1 - p.fixed / 2)
+            // else
+            //     P.fixed <- w.fixed * (1 - p.fixed / 2) + (1 - w.fixed) * p.fixed / 2
+            var Pval = NaN;
+            if (small_values == 'good') {
+                Pval = math.add(
+                    math.dotDivide(
+                        math.dotMultiply(w, p),
+                        2
+                    ),
+                    math.dotMultiply(
+                        math.subtract(1, w),
+                        math.subtract(1, math.dotDivide(p, 2))
+                    )
+                );
+            } else {
+                Pval = math.add(
+                    math.dotMultiply(
+                        w,
+                        math.subtract(1, math.dotDivide(p, 2))
+                    ),
+                    math.dotMultiply(
+                        math.subtract(1, w),
+                        math.dotDivide(p, 2)
+                    )
+                );
+            }
+
+            // Pscore.fixed <- rowMeans(P.fixed, na.rm = TRUE)
+            // row wise
+            var Pscore = math.mean(Pval, 1);
+
+            ret[fixed_or_random] = {
+                Pscore: Pscore,
+                Pmatrix: Pval
+            }
+        }
+
+        return ret;
+    },
+
+    print_league_table: function(nma, fixed_or_random) {
+        if (typeof(fixed_or_random) == 'undefined') {
+            fixed_or_random = 'fixed';
+        }
+
+        // the nma should have fixed and random
+        console.log('* League Table ('+fixed_or_random+' effects model)\n');
+        for (let i = 0; i < nma.ds.treats.length; i++) {
+            const t1 = nma.ds.treats[i];
+            for (let j = 0; j < nma.ds.treats.length; j++) {
+                const t2 = nma.ds.treats[j];
+                if (t1 == t2) {
+                    process.stdout.write(t1.padStart(16, ' ') + ' ');
+                    continue;
+                } else {
+                    process.stdout.write(
+                        nma[fixed_or_random].SM[j][i].toFixed(2) + ' (' +
+                        nma[fixed_or_random].SM_lower[j][i].toFixed(2) + "; " +
+                        nma[fixed_or_random].SM_upper[j][i].toFixed(2) + ') '
+                    );
+                }
+            }
+            console.log('');
+        }
+        console.log('');
     },
 
     calc_n_graphs: function(rs) {

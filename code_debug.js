@@ -222,6 +222,8 @@ function debug_calc_n_graphs() {
 // PemAxi	Suni	1.12	0.91	1.38
 
 function debug_netmeta() {
+    
+    // test 1
     var rs = [
         {study: 'SA', sm: 0.62, lower: 0.46, upper: 0.82, t1: 'CaboNivo', t2: 'Suni', year: 2020},
         {study: 'SB', sm: 0.54, lower: 0.46, upper: 0.63, t1: 'NivoIpi', t2: 'Suni', year: 2021},
@@ -232,8 +234,23 @@ function debug_netmeta() {
     ];
 
     var ret = metajs.netmeta(rs, {});
+    var rank = metajs.netrank(ret);
 
-    console.log(ret);
+    metajs.print_league_table(ret);
+
+    // test 2
+    rs = [
+        {t1: 'E_ADT', t2: 'ADT', sm: 0.72, lower: 0.47, upper: 1.09, study: 'ENZAMET' },
+        {t1: 'APA_ADT', t2: 'ADT', sm: 0.4, lower: 0.15, upper: 1.03, study: 'TITAN' },
+        {t1: 'D_ADT', t2: 'ADT', sm: 0.83, lower: 0.47, upper: 1.47, study: 'GETUG_AFU15' },
+        {t1: 'DARO_D_ADT', t2: 'D_ADT', sm: 0.605, lower: 0.348, upper: 1.052, study: 'ARASENS' },
+    ];
+    ret = metajs.netmeta(rs, {});
+    metajs.print_league_table(ret);
+
+    rank = metajs.netrank(ret);
+    console.log(rank);
+
 };
 
 debug_netmeta();
