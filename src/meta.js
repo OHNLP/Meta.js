@@ -244,11 +244,14 @@ export const metajs = {
 
         var statistic = math.dotDivide(TE, seTE);
 
-        var pval = 2 * pnorm.compute(
-            math.abs(
-                statistic
-            ), 
-            false
+        var pval = math.dotMultiply(
+            2,
+            pnorm.compute(
+                math.abs(
+                    statistic
+                ), 
+                false
+            )
         );
 
         return {
@@ -464,6 +467,9 @@ export const metajs = {
 
     __nma_ruecker: function(ds, tau) {
         if (typeof(tau) == 'undefined') {
+            tau = 0;
+        }
+        if (isNaN(tau)) {
             tau = 0;
         }
         // helper functions 
@@ -786,12 +792,23 @@ export const metajs = {
 
             // Pscore.fixed <- rowMeans(P.fixed, na.rm = TRUE)
             // row wise
-            var Pscore = math.mean(Pval, 1);
-
-            ret[fixed_or_random] = {
-                Pscore: Pscore,
-                Pmatrix: Pval
+            // var Pscore = math.mean(Pval, 1);
+            var pscore = [];
+            for (let i = 0; i < Pval.length; i++) {
+                var Prow = Pval[i];
+                var Prow_non_nan = Pval[i].filter((v)=>!isNaN(v));
+                var mean = math.mean(Prow_non_nan);
+                mean = this.tfxd6(mean);
+                pscore.push({
+                    treat: nma.ds.treats[i],
+                    pscore: mean
+                });
             }
+
+            // sort the pscore
+            pscore.sort((a, b)=>b.pscore - a.pscore);
+
+            ret[fixed_or_random] = pscore;
         }
 
         return ret;
@@ -819,6 +836,31 @@ export const metajs = {
                     );
                 }
             }
+            console.log('');
+        }
+        console.log('');
+    },
+
+    print_network_rank: function(nma, rank) {
+        console.log('* Rank Table\n');
+        console.log(
+            ''.padEnd(18, ' ') +
+            'P-score (fixed)'.padStart(18, ' ') +
+            '  |  ' +
+            ''.padEnd(18, ' ') +
+            'P-score (random)'.padStart(18, ' ')
+        );
+        for (let i = 0; i < nma.ds.treats.length; i++) {
+            process.stdout.write(
+                rank.fixed[i].treat.padEnd(18, ' ') + 
+                rank.fixed[i].pscore.toFixed(4).padStart(18, ' ') + 
+                '  |  '
+            );
+            process.stdout.write(
+                rank.random[i].treat.padEnd(18, ' ') + 
+                rank.random[i].pscore.toFixed(4).padStart(18, ' ')
+            );
+
             console.log('');
         }
         console.log('');
@@ -2293,7 +2335,7 @@ export const pnorm = {
             1,
             math.add(
                 1,
-                math.multiply(
+                math.dotMultiply(
                     0.2316419,
                     math.abs(X)
                 )
@@ -2302,10 +2344,10 @@ export const pnorm = {
         
         // var D=.3989423*Math.exp(-X*X/2);
         
-        var D = math.multiply(
+        var D = math.dotMultiply(
             0.3989423,
             math.exp(
-                math.multiply(
+                math.dotMultiply(
                     -0.5,
                     math.dotPow(X, 2)
                 )
@@ -2372,7 +2414,16 @@ export const pnorm = {
             )
         }
 
-        p = math.round(100000 * p) / 100000;
+        // p = math.round(100000 * p) / 100000;
+        p = math.dotDivide(
+            math.round(
+                math.dotMultiply(
+                    100000,
+                    p
+                )
+            ),
+            100000
+        );
 
         return p;
     }

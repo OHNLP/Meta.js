@@ -233,10 +233,11 @@ function debug_netmeta() {
         {study: 'SF', sm: 1.12, lower: 0.91, upper: 1.38, t1: 'PemAxi', t2: 'Suni', year: 2022},
     ];
 
-    var ret = metajs.netmeta(rs, {});
-    var rank = metajs.netrank(ret);
+    var nma = metajs.netmeta(rs, {});
+    var rank = metajs.netrank(nma);
+    metajs.print_network_rank(nma, rank);
 
-    metajs.print_league_table(ret);
+    // metajs.print_league_table(nma);
 
     // test 2
     rs = [
@@ -245,11 +246,12 @@ function debug_netmeta() {
         {t1: 'D_ADT', t2: 'ADT', sm: 0.83, lower: 0.47, upper: 1.47, study: 'GETUG_AFU15' },
         {t1: 'DARO_D_ADT', t2: 'D_ADT', sm: 0.605, lower: 0.348, upper: 1.052, study: 'ARASENS' },
     ];
-    ret = metajs.netmeta(rs, {});
-    metajs.print_league_table(ret);
+    nma = metajs.netmeta(rs, {});
+    // metajs.print_league_table(nma);
 
-    rank = metajs.netrank(ret);
-    console.log(rank);
+    rank = metajs.netrank(nma);
+    metajs.print_network_rank(nma, rank);
+    // console.log(rank);
 
 };
 
