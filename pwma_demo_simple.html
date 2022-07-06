@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="shortcut icon" href="./favicon.ico">
+<title>Meta.js Test</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" />
+<style>
+html,body {
+    width: 100%;
+    height: 100%;
+    font-size: 14px;
+    overflow-x: hidden;
+}
+p {
+    margin: 0.5em 0;
+}
+.mb-1 {
+    margin-bottom: 1em;
+}
+.tb-result {
+    padding: 2px 0;
+}
+.tb-result th {
+    border-top: 2px solid #cccccc;
+    border-bottom: 2px solid #cccccc;
+    padding: 0px 5px;
+}
+.tb-result td {
+    border-bottom: 1px solid #efefef;
+    border-right: 1px solid #efefef;
+    text-align: center;
+    padding: 0px 5px;
+}
+.param-list {
+    padding: 1px;
+}
+.param-key {
+    padding: 1px 5px;
+    background: #dfdfdf;
+    border-bottom: 1px solid #dfdfdf;
+    text-align: center;
+}
+.param-val {
+    padding: 1px 3px;
+    border-bottom: 1px solid #dfdfdf;
+    text-align: center;
+    font-style: italic;
+}
+/* a start screen for IE and hiding init */
+#start-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 9999;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+#ss-msg {
+    width: 100%;
+    padding: 10px 0;
+    text-align: center;
+}
+</style>
+</head>
+<body>
+<div id="start-screen">
+    <h1>
+        <i class="fas fa-calculator"></i>
+        Meta.js Demonstration
+    </h1>
+    <div id="ss-msg">Initializing User Interface ...</div>
+</div>
+<p>
+    <b>
+        Meta.js Demonstration
+    </b> |
+    More information: 
+    <a target="_blank" href="https://github.com/OHNLP/Meta.js">
+        <i class="fab fa-github"></i>
+        GitHub
+    </a>
+</p>
+<div id="app_test"
+    style="display: flex; flex-direction: row;">
+
+    <fieldset>
+        <legend>DATA</legend>
+        <div v-if="n_ocs == null">
+            <p>
+                Please wait for loading data ...
+            </p>
+        </div>
+        <div v-else>
+            <h2>
+                Small Sample CSV
+            </h2>
+
+            <div class="mb-1">
+                <p>A sample outcome with binary data</p>
+                <textarea id="sample_txt" 
+                    cols="50" 
+                    rows="11" 
+                    v-model="sample_txt"></textarea>
+                <br>
+                <button v-on:click="run_sample">
+                    Run PMA
+                </button>
+                |
+
+                <button v-on:click="make_sample">
+                    Make random sample
+                </button>
+            </div>
+
+            <h2>
+                Random Samples
+            </h2>
+            <div class="mb-1">
+                <button v-on:click="demo(100)">
+                    Run PMA on random 100 outcomes
+                </button>
+            </div>
+            <hr>
+            <h2>
+                Performance Test
+            </h2>
+            <p v-if="is_testing" style="max-width: 300px;">
+                Details are outputed in console during testing.
+                <br>
+                For Chrome browser, press "Ctrl + Shift + I" on Windows, or "Cmd + Opt + I" on MacOS to open console.
+            </p>
+            <div class="mb-1">
+                <button v-on:click="run_tests_topn(1000)"
+                    v-bind:disabled="is_testing">
+                    <span v-if="is_testing">
+                        Running test ...
+                    </span>
+                    <span v-else>
+                        Run PMA of 1,000 outcomes
+                    </span>
+                </button>
+            </div>
+
+            <div class="mb-1">
+                <button v-on:click="run_tests_rounds()"
+                    :disabled="is_testing">
+                    <span v-if="is_testing">
+                        Running test ...
+                    </span>
+                    <span v-else>
+                        Run 1,000 to 10,000 outcomes
+                    </span>
+                </button>
+            </div>
+
+            <div>
+                <input type="text" 
+                    :disabled="is_testing"
+                    style="width: 30px"
+                    v-model.number="n_times">
+
+                <button v-on:click="run_tests_random(10)"
+                    :disabled="is_testing">
+                    <span v-if="is_testing">
+                        Running test ...
+                    </span>
+                    <span v-else>
+                        Run {{ n_times }} times of PMA of 1,000 outcomes
+                    </span>
+                </button>
+            </div>
+
+        </div>
+    </fieldset>
+
+    <fieldset>
+        <legend>RESULTS</legend>
+        <p v-if="dur == null">
+        </p>
+        <p v-else>
+            It takes <b>{{ tf4(dur) }}</b> seconds to calculate {{ results.length }} outcomes
+        </p>
+        <div v-if="results.length > 0"
+            style="display: flex; flex-direction: column; flex-wrap: wrap;">
+            <p>
+                Settings:
+            </p>
+            <div class="mb-1"
+                style="display: flex; flex-direction: row; flex-wrap: wrap;">
+                <div v-for="val, key in results[0].res.params"
+                    class="param-list">
+                    <div class="param-key">
+                        {{ key }}
+                    </div>
+                    <div class="param-val">
+                        {{ val }}
+                    </div>
+                </div>
+            </div>
+            <p>
+                Results:
+            </p>
+            <table v-for="r in results" 
+                class="mb-1 tb-result">
+                <tr>
+                    <th>Study ({{r.oc.length }} studies)</th>
+                    <th>Et</th>
+                    <th>Nt</th>
+                    <th>Ec</th>
+                    <th>Nc</th>
+                    <th>Treatment</th>
+                    <th>Control</th>
+                    <th>Odds Ratio</th>
+                    <th>Lower, Upper</th>
+                    <th>Weight</th>
+                </tr>
+                <tr v-for="stu, stu_idx in r.oc">
+                    <td>{{ stu[4] }}</td>
+                    <td>{{ stu[0] }}</td>
+                    <td>{{ stu[1] }}</td>
+                    <td>{{ stu[2] }}</td>
+                    <td>{{ stu[3] }}</td>
+                    <td>{{ stu[5] }}</td>
+                    <td>{{ stu[6] }}</td>
+
+                    <td>{{ tf2(r.res.SM[stu_idx]) }}</td>
+                    <td>
+                        {{ tf2(r.res.SM_lower[stu_idx]) }}, 
+                        {{ tf2(r.res.SM_upper[stu_idx]) }}
+                    </td>
+                    <td>
+                        {{ tf2(r.res.fixed.wp[stu_idx] * 100) }}%
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="7">
+                        <b>Fixed Effect Model</b>
+                    </td>
+                    <td>
+                        {{ tf2(r.res.fixed.SM) }}
+                    </td>
+                    <td>
+                        (
+                            {{ tf2(r.res.fixed.SM_lower) }}, 
+                            {{ tf2(r.res.fixed.SM_upper) }}
+                        )
+                    </td>
+                    <td>
+                        100%
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="7">
+                        Heterogeneity:
+                    </td>
+                    <td>
+                        I<sup>2</sup>={{ tf2(r.res.heterogeneity.I2*100) }}%
+                    </td>
+                    <td>
+                        Tau<sup>2</sup>={{ tf4(r.res.heterogeneity.tau2) }}
+                    </td>
+                    <td>
+                        <span v-if="r.res.heterogeneity.pval_Q < 0.01">
+                            <i>p</i> &lt; 0.01
+                        </span>
+                        <span v-else>
+                            <i>p</i>={{ tf2(r.res.heterogeneity.pval_Q) }} 
+                        </span>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <div v-else-if="log.length > 0">
+            <table class="tb-result">
+                <tr>
+                    <th>Number of outcomes</th>
+                    <th>Time (seconds)</th>
+                </tr>
+                <tr v-for="r in log">
+                    <td>{{ r.n }}</td>
+                    <td>{{ tf4(r.dur) }}</td>
+                </tr>
+            </table>
+        </div>
+    </fieldset>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.3.0/dist/echarts.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.14/vue.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/nicolaspanel/numjs@0.15.1/dist/numjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/10.1.1/math.min.js"></script>
+
+
+<!-- load meta.js -->
+<script src="./dist/meta-0.0.1.js"></script>
+
+<script>
+function get_browser() {
+    var ua = navigator.userAgent,tem,M=ua.match(/(opera|chrome|safari|firefox|msie|trident(?=\/))\/?\s*(\d+)/i) || []; 
+    if(/trident/i.test(M[1])){
+        tem=/\brv[ :]+(\d+)/g.exec(ua) || []; 
+        return {name:'IE',version:(tem[1]||'')};
+        }   
+    if(M[1]==='Chrome'){
+        tem=ua.match(/\bOPR|Edge\/(\d+)/)
+        if(tem!=null)   {return {name:'Opera', version:tem[1]};}
+        }   
+    M=M[2]? [M[1], M[2]]: [navigator.appName, navigator.appVersion, '-?'];
+    if((tem=ua.match(/version\/(\d+)/i))!=null) {M.splice(1,1,tem[1]);}
+    return {
+      name: M[0],
+      version: M[1]
+    };
+}
+var _browser = get_browser();
+
+var isIE = /*@cc_on!@*/false || !!document.documentMode;
+var isCHROME = _browser.name == 'Chrome';
+var isSAFARI = _browser.name == 'Safari';
+var isFIREFOX = _browser.name == 'Firefox';
+
+var app_test = {
+    vpp: null,
+    vpp_id: '#app_test',
+    ocs: [],
+
+    init: function() {
+        
+        this.vpp = new Vue({
+            el: this.vpp_id,
+            data: {
+                n_ocs: null,
+
+                // sample
+                sample_txt: 'study,Et,Nt,Ec,Nc,treatment,control\nARCHES24,139,572,147,574,Treat,Placebo\nENZAMET7,321,563,241,558,Treat,Placebo\nLATITUDE,411,597,309,602,Treat,Placebo\nSTAMPEDE,288,592,399,1184,Treat,Placebo\nCHKMT154,155,422,287,1072,Treat,Placebo\nTXNMRX23,223,531,280,588,Treat,Placebo\nQWERTXBN,198,401,220,420,Treat,Placebo\nTUXSWX09,252,531,314,707,Treat,Placebo\nPROTE002,353,662,505,888,Treat,Placebo\nATLASTX2,364,703,236,629,Treat,Placebo',
+
+                // the log of tests
+                log: [],
+
+                // duration of calculation
+                dur: null,
+
+                // flag
+                is_testing: false,
+
+                // the n_times
+                n_times: 10,
+
+                // results
+                results: []
+            },
+            methods: {
+
+                run_sample: function() {
+                    this.clear();
+                    // split text
+                    var lines = this.sample_txt.split('\n');
+                    
+                    Papa.parse(this.sample_txt, {
+                        header: true,
+
+                        complete: function(rs) {
+                            console.log(rs);
+
+                            // parse outcomes
+                            var outcome = [];
+
+                            for (let i = 0; i < rs.data.length; i++) {
+                                const r = rs.data[i];
+                                outcome.push([
+                                    parseInt(r.Et), 
+                                    parseInt(r.Nt), 
+                                    parseInt(r.Ec), 
+                                    parseInt(r.Nc), 
+                                    r.study, r.treatment, r.control
+                                ]);
+                            }
+
+                            // now do ma
+                            var ret = app_test.run_pma([outcome]);
+
+                            // show
+                            app_test.vpp.$data.results = ret.results;
+                            app_test.vpp.$data.dur = ret.dur;
+                        }
+                    })
+                },
+
+                make_sample: function() {
+                    var sample = [
+                        'study,Et,Nt,Ec,Nc,treatment,control'
+                    ];
+
+                    var n = math.randomInt(2, 40);
+
+                    for (let i = 0; i < n; i++) {
+                        var et = math.randomInt(0, 100);
+                        var nt = math.randomInt(1, 100) + et;
+                        var ec = math.randomInt(0, 100);
+                        var nc = math.randomInt(1, 100) + ec;
+                        var study = math.random().toString(36).slice(7).toLocaleUpperCase();
+                        sample.push(
+                            [study, et, nt, ec, nc, 'Treat', 'Placebo'].map(v=>''+v).join(',')
+                        );
+                    }
+
+                    sample = sample.join('\n');
+
+                    this.sample_txt = sample;
+                },
+
+                demo: function(n) {
+                    this.clear();
+                    var idxes = math.pickRandom(Array.from(Array(10000).keys()), n);
+                    var ret = app_test.run_tests_idxes(idxes);
+
+                    // bind results
+                    this.results = ret.results;
+                    this.dur = ret.dur;
+                },
+
+                clear: function() {
+                    // clear log
+                    this.log = [];
+
+                    // clear dur
+                    this.dur = null;
+
+                    // clear results
+                    this.results = [];
+                },
+
+                run_tests_topn: function(n) {
+                    this.clear();
+                    this.is_testing = true;
+
+                    setTimeout('app_test.run_tests_topn('+n+');app_test.vpp.$data.is_testing = false;', 500);
+                },
+
+                run_tests_rounds: function() {
+                    this.clear();
+                    this.is_testing = true;
+
+                    setTimeout('app_test.run_tests_rounds();app_test.vpp.$data.is_testing = false;', 500);
+                },
+
+                run_tests_random: function(n) {
+                    this.clear();
+                    this.is_testing = true;
+                    
+                    setTimeout('app_test.run_tests_random('+this.n_times+');app_test.vpp.$data.is_testing = false;', 500);
+                },
+
+                tf2(v) {
+                    return v.toFixed(2);
+                },
+
+                tf4(v) {
+                    return v.toFixed(4);
+                }
+            }
+        });
+    
+    },
+
+    run_pma: function(outcomes) {
+        var results = [];
+
+        const t0 = performance.now();
+        for (let i = 0; i < outcomes.length; i++) {
+            const outcome = outcomes[i];
+            
+            var res = metajs.metabin(
+                outcome,
+                {}
+            );
+
+            // save the res
+            results.push({
+                oc: outcome,
+                res: res
+            });
+        }
+        const t1 = performance.now();
+        const dur = (t1 - t0) / 1000;
+
+        return {
+            dur: dur,
+            results: results
+        };
+    },
+
+    run_tests_idxes: function(idxes) {
+        var results = [];
+        const t0 = performance.now();
+        for (let i = 0; i < idxes.length; i++) {
+            // get the MA result
+            var res = metajs.metabin(
+                this.ocs[idxes[i]]
+            );
+
+            // save the res
+            results.push({
+                oc: this.ocs[idxes[i]],
+                res: res
+            });
+        }
+        const t1 = performance.now();
+        const dur = (t1 - t0) / 1000;
+
+        return {
+            dur: dur,
+            results: results
+        };
+    },
+
+    run_tests_topn: function(n) {
+        var results = [];
+
+        // start to count
+        const t0 = performance.now();
+        for (let i = 0; i < n; i++) {
+            var res = metajs.metabin(
+                this.ocs[i]
+            );
+            results.push(res);
+        }
+        const t1 = performance.now();
+
+        // ok, that's how long it takes
+        const dur = (t1 - t0) / 1000;
+
+        console.log('' + n + ',' + dur + '');
+
+        // update the log in app
+        app_test.vpp.$data.log.push(
+            {n: n, dur: dur}
+        );
+        // app_test.vpp.$forceUpdate();
+    },
+
+    run_tests_rounds: function() {
+        for (let n = 1000; n <= 10000; n+=1000) {
+            this.run_tests_topn(n);
+        }
+    },
+
+    run_tests_random: function(n_times) {
+        var n = 1000;
+        for (let i = 0; i < n_times; i++) {
+            // pick random 1000 numbers
+            var nums = math.pickRandom(Array.from(Array(10000).keys()), n);
+            var results = [];
+            
+            const t0 = performance.now();
+            for (let i = 0; i < nums.length; i++) {
+                var res = metajs.metabin(
+                    this.ocs[nums[i]]
+                );
+            }
+            const t1 = performance.now();
+
+            // ok, that's how long it takes
+            const dur = (t1 - t0) / 1000;
+            console.log('' + i + ',' + dur + '');
+
+            app_test.vpp.$data.log.push(
+                {n: n, dur: dur}   
+            );
+            // app_test.vpp.$forceUpdate();
+        }
+    }
+};
+
+var jarvis = {
+    rs: null,
+
+
+    ssmsg: function(msg) {
+        $('#ss-msg').html(msg);
+    },
+
+    ssclose: function() {
+        $('#start-screen').hide();
+    },
+
+    init: function() {
+        // init the app first
+        app_test.init();
+
+        // load data
+        Papa.parse("./testsets/sample.csv", {
+            download: true,
+            header: true,
+
+            complete: function(rs) {
+                console.log(rs);
+                // bind data
+                jarvis.rs = rs;
+
+                // parse outcomes
+                var outcomes = {};
+
+                for (let i = 0; i < rs.data.length; i++) {
+                    const r = rs.data[i];
+                    if (!outcomes.hasOwnProperty(r.outcome)) {
+                        outcomes[r.outcome] = [];
+                    }
+                    outcomes[r.outcome].push([
+                        parseInt(r.Et), 
+                        parseInt(r.Nt), 
+                        parseInt(r.Ec), 
+                        parseInt(r.Nc), 
+                        r.study, r.treatment, r.control
+                    ]);
+                }
+
+                outcomes = Object.values(outcomes);
+
+                // set the data
+                app_test.ocs = outcomes;
+                app_test.vpp.$data.n_ocs = outcomes.length;
+            }
+        });
+
+        // ok, show the UI
+        if (!isCHROME) {
+            var msg = 'The performance of calculation is affected by the JavaScript engine significantly, we recommend you to use <a href="https://v8.dev" target="_blank">V8</a> based web browser.<br>' + 
+            'Try using latest <a target="_blank" href="https://www.google.com/chrome/">Google Chrome</a> or other <a target="_blank" href="https://download-chromium.appspot.com/">Chromium</a> based browsers (e.g., <a target="_blank" href="https://www.microsoft.com/en-us/edge">Microsoft Edge</a>, <a target="_blank" href="https://vivaldi.com/">Vivaldi</a>) to get best performance.<br> '+
+'<a style="font-size:1.5em;" href="javascript:void(0);" onclick="jarvis.ssclose()">Continue to use <i class="fa fa-arrow-alt-circle-right"></i></a>';
+            jarvis.ssmsg(msg);
+        } else {
+            jarvis.ssmsg('Initialized');
+            setTimeout("jarvis.ssclose();", 1000);
+        }
+    }
+};
+
+$(document).ready(function() {
+    jarvis.init();
+});
+</script>
+</body>
+</html>
