@@ -266,7 +266,7 @@ export const metajs = {
     },
     
     /**
-     * Network Meta-analysis based Frequentist Method
+     * Network Meta-analysis based on Frequentist Method
      * 
      * Due to the complixty of input format, `netmeta` accepts list of dict object
      * [

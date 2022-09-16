@@ -221,7 +221,7 @@ function debug_calc_n_graphs() {
 // AteBev	Suni	0.74	0.45	1.2
 // PemAxi	Suni	1.12	0.91	1.38
 
-function debug_netmeta() {
+function _debug_netmeta_test1() {
     
     // test 1
     var rs = [
@@ -234,25 +234,36 @@ function debug_netmeta() {
     ];
 
     var nma = metajs.netmeta(rs, {});
+
+    // the league table
+    metajs.print_league_table(nma);
+
+    // the rank list
     var rank = metajs.netrank(nma);
     metajs.print_network_rank(nma, rank);
 
-    // metajs.print_league_table(nma);
+};
 
+function _debug_netmeta_test2() {
     // test 2
-    rs = [
+    var rs = [
         {t1: 'E_ADT', t2: 'ADT', sm: 0.72, lower: 0.47, upper: 1.09, study: 'ENZAMET' },
         {t1: 'APA_ADT', t2: 'ADT', sm: 0.4, lower: 0.15, upper: 1.03, study: 'TITAN' },
         {t1: 'D_ADT', t2: 'ADT', sm: 0.83, lower: 0.47, upper: 1.47, study: 'GETUG_AFU15' },
         {t1: 'DARO_D_ADT', t2: 'D_ADT', sm: 0.605, lower: 0.348, upper: 1.052, study: 'ARASENS' },
     ];
-    nma = metajs.netmeta(rs, {});
-    // metajs.print_league_table(nma);
 
-    rank = metajs.netrank(nma);
+    // the league table
+    var nma = metajs.netmeta(rs, {});
+    metajs.print_league_table(nma);
+
+    // 
+    var rank = metajs.netrank(nma);
     metajs.print_network_rank(nma, rank);
-    // console.log(rank);
+}
 
-};
+function debug_netmeta() {
+    _debug_netmeta_test1();
+}
 
 debug_netmeta();
