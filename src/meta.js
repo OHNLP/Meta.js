@@ -2325,6 +2325,66 @@ export const metajs = {
         ret.random.wp = this.expand_list(ret.random.wp, rs.length, d2r);
 
         return ret;
+    },
+
+    /**
+     * Test for funnel plot asymmetry
+     * 
+     * Reference: https://github.com/guido-s/meta/blob/develop/R/metabias.R
+     * 
+     * @param {Object} x estimated treatment effect (metabin results)
+     * @param {Object} params parameters
+     */
+    metabias: function(x, params) {
+        ///////////////////////////////////////////////////
+        // (1) Check x
+        ///////////////////////////////////////////////////
+
+
+        ///////////////////////////////////////////////////
+        // (2) Check other arguments
+        ///////////////////////////////////////////////////
+        // Yes, you can use default settings
+        if (typeof(params)=='undefined') {
+            params = {};
+        }
+        
+        if (!params.hasOwnProperty('method_bias')) {
+            if (x.params.sm == 'OR') {
+                params['method_bias'] = 'Harbord';
+            } else {
+                params['method_bias'] = 'Egger';
+            }
+        }
+
+        ///////////////////////////////////////////////////
+        // (3) Select studies for inclusion in test of funnel plot asymmetry
+        ///////////////////////////////////////////////////
+        var TE = x.TE;
+        var seTE = x.seTE;
+        var n_e = x.ds.Nt;
+        var n_c = x.ds.Nc;
+        var event_e = x.ds.Et;
+        var event_c = x.ds.Ec;
+
+        ///////////////////////////////////////////////////
+        // (4) Conduct test of funnel plot asymmetry
+        ///////////////////////////////////////////////////
+
+        if (params.method_bias == 'Egger') {
+
+        } else if (params.method_bias == 'Harbord') {
+
+        }
+
+        ///////////////////////////////////////////////////
+        // (5) Finalize return object
+        ///////////////////////////////////////////////////
+        var ret = {
+            params: params
+        };
+
+        return ret;
     }
 }
 
