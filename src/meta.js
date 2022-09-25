@@ -868,7 +868,7 @@ export const metajs = {
 
     calc_n_graphs: function(rs) {
         var graphs = [];
-        function union(setA, setB) {
+        function set_union(setA, setB) {
             let _union = new Set(setA);
             for (let elem of setB) {
                 _union.add(elem);
